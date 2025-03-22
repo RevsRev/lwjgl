@@ -9,6 +9,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
 import java.awt.Color;
+import java.nio.ByteBuffer;
 
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
@@ -63,6 +64,16 @@ public class Mandelbrot
     private double globalZoom = 1.0;
     private int maxIterations = 50;
 
+    private static final float[] QUAD_VERTICES = {
+            // (x, y) , (texX, texY)
+            -1.0f, 1.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f,
+            1.0f, -1.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f, 0.0f, 1.0f,
+            1.0f, -1.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 1.0f, 1.0f
+    };
+
     private static final float[] SQUARE_VERTICES = {
             1.0f, 1.0f, 0.0f, // top right
             1.0f, -1.0f, 0.0f, // bottom right
@@ -115,36 +126,65 @@ public class Mandelbrot
         glfwSetScrollCallback(window, getScrollCallback());
         glfwSetCursorPosCallback(window, getCursorPosCallback());
 
-        int vao = GL43.glGenVertexArrays();
-        GL43.glBindVertexArray(vao);
+        int fbo = GL43.glGenFramebuffers();
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
 
-        //Draw a square
-        int vbo = GL43.glGenBuffers();
-        GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, vbo);
+        int textureIdentifier = GL43.glGenTextures();
+        GL43.glBindTexture(GL43.GL_TEXTURE_2D, textureIdentifier);
+        GL43.glTexImage2D(GL43.GL_TEXTURE_2D,
+                0,
+                GL43.GL_RGB,
+                width,
+                height,
+                0,
+                GL43.GL_RGB,
+                GL43.GL_UNSIGNED_BYTE,
+                (ByteBuffer) null);
+
+        GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MIN_FILTER, GL43.GL_LINEAR);
+        GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MAG_FILTER, GL43.GL_LINEAR);
+
+        GL43.glFramebufferTexture2D(GL43.GL_FRAMEBUFFER, GL43.GL_COLOR_ATTACHMENT0, GL43.GL_TEXTURE_2D, textureIdentifier, 0);
+
+        int rbo = GL43.glGenRenderbuffers();
+        GL43.glBindRenderbuffer(GL43.GL_RENDERBUFFER, rbo);
+        GL43.glRenderbufferStorage(GL43.GL_RENDERBUFFER, GL43.GL_DEPTH24_STENCIL8, width, height);
+        GL43.glFramebufferRenderbuffer(GL43.GL_FRAMEBUFFER, GL43.GL_DEPTH_STENCIL_ATTACHMENT, GL43.GL_RENDERBUFFER, rbo);
+
+        if (GL43.glCheckFramebufferStatus(GL43.GL_FRAMEBUFFER) != GL43.GL_FRAMEBUFFER_COMPLETE) {
+            System.out.println("Frame buffer was not completed");
+        }
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
+
+        int mandelVao = GL43.glGenVertexArrays();
+        GL43.glBindVertexArray(mandelVao);
+
+        int mandelVbo = GL43.glGenBuffers();
+        GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, mandelVbo);
         GL43.glBufferData(GL43.GL_ARRAY_BUFFER, SQUARE_VERTICES, GL43.GL_STATIC_DRAW);
-        int ebo = GL43.glGenBuffers();
-        GL43.glBindBuffer(GL43.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        int mandelEbo = GL43.glGenBuffers();
+        GL43.glBindBuffer(GL43.GL_ELEMENT_ARRAY_BUFFER, mandelEbo);
         GL43.glBufferData(GL43.GL_ELEMENT_ARRAY_BUFFER, SQUARE_INDICES, GL43.GL_STATIC_DRAW);
 
-        int vertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER, "mandlebrot/shaders/vertex/vertex.vert");
-        int fragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER, "mandlebrot/shaders/fragment/frag.frag");
+        int mandelVertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER, "mandlebrot/shaders/vertex/mandelbrot.vert");
+        int mandelFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
+                "mandlebrot/shaders/fragment/mandelbrot.frag");
 
-
-        int shaderProgram = GL43.glCreateProgram();
-        GL43.glAttachShader(shaderProgram, vertexShader);
-        GL43.glAttachShader(shaderProgram, fragmentShader);
-        GL43.glLinkProgram(shaderProgram);
+        int mandelShaderProgram = GL43.glCreateProgram();
+        GL43.glAttachShader(mandelShaderProgram, mandelVertexShader);
+        GL43.glAttachShader(mandelShaderProgram, mandelFragmentShader);
+        GL43.glLinkProgram(mandelShaderProgram);
 
         int[] linkStatus = new int[1];
-        GL43.glGetProgramiv(shaderProgram, GL43.GL_LINK_STATUS, linkStatus);
+        GL43.glGetProgramiv(mandelShaderProgram, GL43.GL_LINK_STATUS, linkStatus);
         if (linkStatus[0] != 1) {
-            System.out.println(GL43.glGetProgramInfoLog(shaderProgram));
+            System.out.println(GL43.glGetProgramInfoLog(mandelShaderProgram));
         }
 
-        GL43.glUseProgram(shaderProgram);
+        GL43.glUseProgram(mandelShaderProgram);
 
-        int backgroundColorShaderLocation = GL43.glGetUniformLocation(shaderProgram, "backgroundColor");
-        int setColorShaderLocation = GL43.glGetUniformLocation(shaderProgram, "setColor");
+        int backgroundColorShaderLocation = GL43.glGetUniformLocation(mandelShaderProgram, "backgroundColor");
+        int setColorShaderLocation = GL43.glGetUniformLocation(mandelShaderProgram, "setColor");
 
         Color backgroundColor = new Color(10, 3, 61, 255);
         float[] backgroundColorRGB = backgroundColor.getRGBColorComponents(new float[3]);
@@ -163,30 +203,77 @@ public class Mandelbrot
                 setColorRGB[2],
                 1.0f);
 
-        int coordinateInfoLocation = GL43.glGetUniformLocation(shaderProgram, "coordInfo");
+        int coordinateInfoLocation = GL43.glGetUniformLocation(mandelShaderProgram, "coordInfo");
         GL43.glUniform4d(coordinateInfoLocation, coordOriginX, coordOriginY, coordXWidth, coordYWidth);
 
-        int maxIterationsLocation = GL43.glGetUniformLocation(shaderProgram, "maxIterations");
+        int maxIterationsLocation = GL43.glGetUniformLocation(mandelShaderProgram, "maxIterations");
         GL43.glUniform1i(maxIterationsLocation, maxIterations);
 
         // linked, so we don't need anymore :)
-        GL43.glDeleteShader(vertexShader);
-        GL43.glDeleteShader(fragmentShader);
+        GL43.glDeleteShader(mandelVertexShader);
+        GL43.glDeleteShader(mandelFragmentShader);
 
-        GL43.glVertexAttribPointer(0, 3, GL43.GL_FLOAT, false, 3 * 4, 0);
         GL43.glEnableVertexAttribArray(0);
+        GL43.glVertexAttribPointer(0, 3, GL43.GL_FLOAT, false, 3 * 4, 0);
+
+        //Now set up the render stuff
+        int renderVao = GL43.glGenVertexArrays();
+        GL43.glBindVertexArray(renderVao);
+
+        int renderVbo = GL43.glGenBuffers();
+        GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, renderVbo);
+        GL43.glBufferData(GL43.GL_ARRAY_BUFFER, QUAD_VERTICES, GL43.GL_STATIC_DRAW);
+
+        int renderVertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER,
+                "mandlebrot/shaders/vertex/render.vert");
+        int renderFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
+                "mandlebrot/shaders/fragment/render.frag");
+
+        int renderShaderProgram = GL43.glCreateProgram();
+        GL43.glAttachShader(renderShaderProgram, renderVertexShader);
+        GL43.glAttachShader(renderShaderProgram, renderFragmentShader);
+        GL43.glLinkProgram(renderShaderProgram);
+
+        int[] renderLinkStatus = new int[1];
+        GL43.glGetProgramiv(renderShaderProgram, GL43.GL_LINK_STATUS, renderLinkStatus);
+        if (renderLinkStatus[0] != 1) {
+            System.out.println(GL43.glGetProgramInfoLog(renderShaderProgram));
+        }
+
+        GL43.glUseProgram(renderShaderProgram);
+        GL43.glUniform1i(GL43.glGetUniformLocation(renderShaderProgram, "screenTexture"), 0);
+
+        GL43.glEnableVertexAttribArray(0);
+        GL43.glVertexAttribPointer(0, 2, GL43.GL_FLOAT, false, 4 * 4, 0);
+        GL43.glEnableVertexAttribArray(1);
+        GL43.glVertexAttribPointer(1, 2, GL43.GL_FLOAT, false, 4 * 4, 2 * 4);
 
         glfwSwapInterval(1);
         glfwShowWindow(window);
 
         while (!glfwWindowShouldClose(window)) {
+            GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
             GL43.glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-            GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
+            GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
+            GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
+
+            GL43.glUseProgram(mandelShaderProgram);
+            GL43.glBindVertexArray(mandelVao);
 
             GL43.glUniform4d(coordinateInfoLocation, coordOriginX, coordOriginY, coordXWidth, coordYWidth);
             GL43.glUniform1i(maxIterationsLocation, maxIterations);
-
             GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
+
+            GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
+            GL43.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
+
+            GL43.glUseProgram(renderShaderProgram);
+            GL43.glBindVertexArray(renderVao);
+            GL43.glDisable(GL43.GL_DEPTH_TEST);
+            GL43.glBindTexture(GL43.GL_TEXTURE_2D, textureIdentifier);
+
+            GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
 
             glfwSwapBuffers(window);
             glfwPollEvents();
