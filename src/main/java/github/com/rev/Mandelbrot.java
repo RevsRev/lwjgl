@@ -109,11 +109,6 @@ public class Mandelbrot
         GL.createCapabilities();
         GL43.glViewport(0, 0, width, height);
 
-        glfwSetFramebufferSizeCallback(
-                window,
-                getGlfwFramebufferSizeCallback()
-        );
-
         glfwSetKeyCallback(window, new GLFWKeyCallback() {
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (action != GLFW_RELEASE)
@@ -127,33 +122,17 @@ public class Mandelbrot
         glfwSetCursorPosCallback(window, getCursorPosCallback());
 
         int fbo = GL43.glGenFramebuffers();
-        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
-
         int textureIdentifier = GL43.glGenTextures();
-        GL43.glBindTexture(GL43.GL_TEXTURE_2D, textureIdentifier);
-        GL43.glTexImage2D(GL43.GL_TEXTURE_2D,
-                0,
-                GL43.GL_RGB,
-                width,
-                height,
-                0,
-                GL43.GL_RGB,
-                GL43.GL_UNSIGNED_BYTE,
-                (ByteBuffer) null);
-
-        GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MIN_FILTER, GL43.GL_LINEAR);
-        GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MAG_FILTER, GL43.GL_LINEAR);
-
-        GL43.glFramebufferTexture2D(GL43.GL_FRAMEBUFFER, GL43.GL_COLOR_ATTACHMENT0, GL43.GL_TEXTURE_2D, textureIdentifier, 0);
-
         int rbo = GL43.glGenRenderbuffers();
-        GL43.glBindRenderbuffer(GL43.GL_RENDERBUFFER, rbo);
-        GL43.glRenderbufferStorage(GL43.GL_RENDERBUFFER, GL43.GL_DEPTH24_STENCIL8, width, height);
-        GL43.glFramebufferRenderbuffer(GL43.GL_FRAMEBUFFER, GL43.GL_DEPTH_STENCIL_ATTACHMENT, GL43.GL_RENDERBUFFER, rbo);
 
-        if (GL43.glCheckFramebufferStatus(GL43.GL_FRAMEBUFFER) != GL43.GL_FRAMEBUFFER_COMPLETE) {
-            System.out.println("Frame buffer was not completed");
-        }
+        glfwSetFramebufferSizeCallback(
+                window,
+                getGlfwFramebufferSizeCallback(fbo, textureIdentifier, rbo)
+        );
+
+
+        setupFramebuffer(fbo, textureIdentifier, rbo);
+
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
 
         int mandelVao = GL43.glGenVertexArrays();
@@ -282,12 +261,43 @@ public class Mandelbrot
         glfwTerminate();
     }
 
-    private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback() {
+    private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback(int fbo, int textureIdentifier, int rbo) {
         return (win, width, height) -> {
             this.width = width;
             this.height = height;
             GL43.glViewport(0, 0, this.width, this.height);
+
+            setupFramebuffer(fbo, textureIdentifier, rbo);
         };
+    }
+
+    private void setupFramebuffer(int fbo, int textureIdentifier, int rbo) {
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
+
+        GL43.glBindTexture(GL43.GL_TEXTURE_2D, textureIdentifier);
+        GL43.glTexImage2D(GL43.GL_TEXTURE_2D,
+                0,
+                GL43.GL_RGB,
+                width,
+                height,
+                0,
+                GL43.GL_RGB,
+                GL43.GL_UNSIGNED_BYTE,
+                (ByteBuffer) null);
+
+        GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MIN_FILTER, GL43.GL_LINEAR);
+        GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MAG_FILTER, GL43.GL_LINEAR);
+
+        GL43.glFramebufferTexture2D(GL43.GL_FRAMEBUFFER, GL43.GL_COLOR_ATTACHMENT0, GL43.GL_TEXTURE_2D,
+                textureIdentifier, 0);
+
+        GL43.glBindRenderbuffer(GL43.GL_RENDERBUFFER, rbo);
+        GL43.glRenderbufferStorage(GL43.GL_RENDERBUFFER, GL43.GL_DEPTH24_STENCIL8, width, height);
+        GL43.glFramebufferRenderbuffer(GL43.GL_FRAMEBUFFER, GL43.GL_DEPTH_STENCIL_ATTACHMENT, GL43.GL_RENDERBUFFER, rbo);
+
+        if (GL43.glCheckFramebufferStatus(GL43.GL_FRAMEBUFFER) != GL43.GL_FRAMEBUFFER_COMPLETE) {
+            System.out.println("Frame buffer was not completed");
+        }
     }
 
     private GLFWScrollCallbackI getScrollCallback() {
