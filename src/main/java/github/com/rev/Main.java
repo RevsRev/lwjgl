@@ -1,22 +1,26 @@
 package github.com.rev;
 
+import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
+import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_HIDDEN;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
-import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
@@ -24,7 +28,9 @@ import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
@@ -38,6 +44,12 @@ public class Main
 {
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
+
+    //View settings
+    private static float zoom = 1.0f;
+    private static final float ZOOM_SENSITIVITY = 0.1f;
+    private static float mouseX;
+    private static float mouseY;
 
     private static final float[] TRIANGLE_VERTICES = {
             -0.5f, -0.5f, 0.0f,
@@ -77,6 +89,7 @@ public class Main
         }
 
         glfwMakeContextCurrent(window);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         GL.createCapabilities();
         GL43.glViewport(0, 0, WIDTH, HEIGHT);
 
@@ -93,6 +106,8 @@ public class Main
                     glfwSetWindowShouldClose(window, true);
             }
         });
+
+        glfwSetScrollCallback(window, getScrollCallback());
 
         int vao = GL43.glGenVertexArrays();
         GL43.glBindVertexArray(vao);
@@ -146,6 +161,31 @@ public class Main
 
         GL43.glUseProgram(shaderProgram);
 
+        int backgroundColorShaderLocation = GL43.glGetUniformLocation(shaderProgram, "backgroundColor");
+        int setColorShaderLocation = GL43.glGetUniformLocation(shaderProgram, "setColor");
+
+        Color backgroundColor = new Color(10, 3, 61, 255);
+        float[] backgroundColorRGB = backgroundColor.getRGBColorComponents(new float[3]);
+
+        Color setColor = new Color(69, 103, 179, 255);
+        float[] setColorRGB = setColor.getRGBColorComponents(new float[3]);
+
+        GL43.glUniform4f(backgroundColorShaderLocation,
+                backgroundColorRGB[0],
+                backgroundColorRGB[1],
+                backgroundColorRGB[2],
+                1.0f);
+        GL43.glUniform4f(setColorShaderLocation,
+                setColorRGB[0],
+                setColorRGB[1],
+                setColorRGB[2],
+                1.0f);
+
+        int zoomLocation = GL43.glGetUniformLocation(shaderProgram, "zoom");
+        GL43.glUniform1f(zoomLocation, zoom);
+        int mouseLocation = GL43.glGetUniformLocation(shaderProgram, "mousePos");
+        GL43.glUniform2f(mouseLocation, mouseX, mouseY);
+
         // linked, so we don't need anymore :)
         GL43.glDeleteShader(vertexShader);
         GL43.glDeleteShader(fragmentShader);
@@ -163,6 +203,8 @@ public class Main
             // Drawing triangle demo
 //            GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 3);
 
+            GL43.glUniform1f(zoomLocation, zoom);
+
             // Drawing square
             GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
 
@@ -171,6 +213,21 @@ public class Main
         }
 
         glfwTerminate();
+    }
+
+    private static GLFWScrollCallbackI getScrollCallback() {
+        return (window, xOffset, yOffset) ->
+        {
+            zoom *= (float) Math.exp(yOffset * ZOOM_SENSITIVITY);
+        };
+    }
+
+    private static GLFWCursorPosCallbackI getCursorPosCallback() {
+        return (window, xpos, ypos) ->
+        {
+            mouseX = (float) xpos;
+            mouseY = (float) ypos;
+        };
     }
 
     private static CharSequence loadShader(String resourcePath) {
