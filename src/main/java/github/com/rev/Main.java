@@ -15,16 +15,18 @@ import java.io.InputStream;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
-import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_HIDDEN;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
+import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
+import static org.lwjgl.glfw.GLFW.glfwGetMouseButton;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
@@ -48,8 +50,8 @@ public class Main
     private static int HEIGHT = 600;
 
     //View settings
-    private static float screenMouseX = 0.0f;
-    private static float screenMouseY = 0.0f;
+    private static float previousCoordMouseX = 0.0f;
+    private static float previousCoordMouseY = 0.0f;
     private static float coordOriginX = 0.0f;
     private static float coordOriginY = 0.0f;
     private static float coordXWidth = 2.0f;
@@ -258,10 +260,18 @@ public class Main
     private static GLFWCursorPosCallbackI getCursorPosCallback() {
         return (window, xpos, ypos) ->
         {
-            screenMouseX = (float) (2 * (xpos - WIDTH/2.0)/WIDTH);
-            screenMouseY = - (float) (2 * (ypos - HEIGHT/2.0)/HEIGHT);
+            previousCoordMouseX = coordMouseX;
+            previousCoordMouseY = coordMouseY;
+
+            float screenMouseX = (float) (2 * (xpos - WIDTH/2.0)/WIDTH);
+            float screenMouseY = - (float) (2 * (ypos - HEIGHT/2.0)/HEIGHT);
             coordMouseX = coordOriginX + screenMouseX * coordXWidth;
             coordMouseY = coordOriginY + screenMouseY * coordYWidth;
+
+            if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                coordOriginX = coordOriginX + (previousCoordMouseX - coordMouseX);
+                coordOriginY = coordOriginY + (previousCoordMouseY - coordMouseY);
+            }
         };
     }
 
