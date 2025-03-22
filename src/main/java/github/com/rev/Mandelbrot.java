@@ -252,7 +252,7 @@ public class Mandelbrot
         glfwShowWindow(window);
 
         while (!glfwWindowShouldClose(window)) {
-            GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
+            GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
             GL43.glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
             GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
