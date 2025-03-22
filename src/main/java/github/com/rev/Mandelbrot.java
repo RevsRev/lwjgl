@@ -129,7 +129,7 @@ public class Mandelbrot
         GL43.glBufferData(GL43.GL_ELEMENT_ARRAY_BUFFER, SQUARE_INDICES, GL43.GL_STATIC_DRAW);
 
         int vertexShader = GL43.glCreateShader(GL43.GL_VERTEX_SHADER);
-        GL43.glShaderSource(vertexShader, loadShader("shaders/vertex/vertex.vert"));
+        GL43.glShaderSource(vertexShader, loadShader("mandlebrot/shaders/vertex/vertex.vert"));
         GL43.glCompileShader(vertexShader);
 
         int[] vertCompileStatus = new int[1];
@@ -140,7 +140,7 @@ public class Mandelbrot
         }
 
         int fragmentShader = GL43.glCreateShader(GL43.GL_FRAGMENT_SHADER);
-        GL43.glShaderSource(fragmentShader, loadShader("shaders/fragment/frag.frag"));
+        GL43.glShaderSource(fragmentShader, loadShader("mandlebrot/shaders/fragment/frag.frag"));
         GL43.glCompileShader(fragmentShader);
 
         int[] fragCompileStatus = new int[1];
