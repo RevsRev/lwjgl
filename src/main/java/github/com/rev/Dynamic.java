@@ -48,6 +48,7 @@ public class Dynamic
     private int height = 600;
 
     private final String dynamicShaderResourceLocation;
+    private final String bootstrapShaderResourceLocation;
 
     //View settings
     private double previousCoordMouseX = 0.0f;
@@ -86,8 +87,9 @@ public class Dynamic
       1, 2, 3 //second triangle
     };
 
-    public Dynamic(final String dynamicShaderResourceLocation) {
+    public Dynamic(final String dynamicShaderResourceLocation, String bootstrapShaderResourceLocation) {
         this.dynamicShaderResourceLocation = dynamicShaderResourceLocation;
+        this.bootstrapShaderResourceLocation = bootstrapShaderResourceLocation;
     }
 
     public void run()
@@ -158,7 +160,7 @@ public class Dynamic
         int bootstrapVertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER,
                 "dynamic/shaders/vertex/bootstrap.vert");
         int bootstrapFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
-                "dynamic/shaders/fragment/bootstrap.frag");
+                bootstrapShaderResourceLocation);
 
         int bootstrapShaderProgram = GL43.glCreateProgram();
         GL43.glAttachShader(bootstrapShaderProgram, bootstrapVertexShader);
