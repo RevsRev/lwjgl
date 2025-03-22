@@ -1,5 +1,6 @@
 package github.com.rev;
 
+import github.com.rev.util.ShaderUtils;
 import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -8,9 +9,6 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
 import java.awt.Color;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
@@ -128,28 +126,9 @@ public class Mandelbrot
         GL43.glBindBuffer(GL43.GL_ELEMENT_ARRAY_BUFFER, ebo);
         GL43.glBufferData(GL43.GL_ELEMENT_ARRAY_BUFFER, SQUARE_INDICES, GL43.GL_STATIC_DRAW);
 
-        int vertexShader = GL43.glCreateShader(GL43.GL_VERTEX_SHADER);
-        GL43.glShaderSource(vertexShader, loadShader("mandlebrot/shaders/vertex/vertex.vert"));
-        GL43.glCompileShader(vertexShader);
+        int vertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER, "mandlebrot/shaders/vertex/vertex.vert");
+        int fragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER, "mandlebrot/shaders/fragment/frag.frag");
 
-        int[] vertCompileStatus = new int[1];
-        GL43.glGetShaderiv(vertexShader, GL43.GL_COMPILE_STATUS, vertCompileStatus);
-
-        if (vertCompileStatus[0] != 1) {
-            System.out.print(GL43.glGetShaderInfoLog(vertexShader));
-        }
-
-        int fragmentShader = GL43.glCreateShader(GL43.GL_FRAGMENT_SHADER);
-        GL43.glShaderSource(fragmentShader, loadShader("mandlebrot/shaders/fragment/frag.frag"));
-        GL43.glCompileShader(fragmentShader);
-
-        int[] fragCompileStatus = new int[1];
-        GL43.glGetShaderiv(fragmentShader, GL43.GL_COMPILE_STATUS, fragCompileStatus);
-
-        if (fragCompileStatus[0] != 1) {
-            String info = GL43.glGetShaderInfoLog(fragmentShader);
-            System.out.print(info);
-        }
 
         int shaderProgram = GL43.glCreateProgram();
         GL43.glAttachShader(shaderProgram, vertexShader);
@@ -257,22 +236,6 @@ public class Mandelbrot
                 coordOriginY = coordOriginY + (previousCoordMouseY - coordMouseY);
             }
         };
-    }
-
-    private CharSequence loadShader(String resourcePath) {
-        try (InputStream is = Mandelbrot.class.getClassLoader().getResourceAsStream(resourcePath)) {
-            if (is == null) {
-                throw new RuntimeException(String.format("Failed to load shader '%s'", resourcePath));
-            }
-            ByteArrayOutputStream result = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            for (int length; (length = is.read(buffer)) != -1; ) {
-                result.write(buffer, 0, length);
-            }
-            return result.toString("UTF-8");
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to load shader '%s'", resourcePath), e);
-        }
     }
 
 }
