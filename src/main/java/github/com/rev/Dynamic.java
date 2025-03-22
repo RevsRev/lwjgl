@@ -1,10 +1,8 @@
 package github.com.rev;
 
 import github.com.rev.util.ShaderUtils;
-import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallback;
-import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
@@ -15,24 +13,19 @@ import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
-import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
 import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
-import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
-import static org.lwjgl.glfw.GLFW.glfwGetMouseButton;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
-import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
@@ -102,28 +95,22 @@ public class Dynamic
 
         int fbo = GL43.glGenFramebuffers();
         int textureIdentifier = GL43.glGenTextures();
+        int textureIdentifierSwap = GL43.glGenTextures();
         int rbo = GL43.glGenRenderbuffers();
 
-        glfwSetFramebufferSizeCallback(
-                window,
-                getGlfwFramebufferSizeCallback(fbo, textureIdentifier, rbo)
-        );
+        setupFramebuffer(fbo, rbo);
 
-        setupFramebuffer(fbo, textureIdentifier, rbo);
-
-        int fboSwap = GL43.glGenFramebuffers();
-        int textureIdentifierSwap = GL43.glGenTextures();
-        int rboSwap = GL43.glGenRenderbuffers();
-
-        //TODO - Won't work with resizing at the moment!
-        setupFramebuffer(fboSwap, textureIdentifierSwap, rboSwap);
+        setupTexture(textureIdentifier);
+        bindTexture(textureIdentifier);
+        setupTexture(textureIdentifierSwap);
+        bindTexture(textureIdentifierSwap);
 
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
 
         // BOOTSTRAP VAO, VBO SHADERS
 
-        int boostrapVao = GL43.glGenVertexArrays();
-        GL43.glBindVertexArray(boostrapVao);
+        int bootstrap = GL43.glGenVertexArrays();
+        GL43.glBindVertexArray(bootstrap);
 
         int bootstrapVbo = GL43.glGenBuffers();
         GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, bootstrapVbo);
@@ -153,6 +140,12 @@ public class Dynamic
         GL43.glEnableVertexAttribArray(1);
         GL43.glVertexAttribPointer(1, 2, GL43.GL_FLOAT, false, 4 * 4, 2 * 4);
 
+        glfwSetFramebufferSizeCallback(
+                window,
+                getGlfwFramebufferSizeCallback(fbo, textureIdentifier, textureIdentifierSwap, rbo,
+                        bootstrapShaderProgram, bootstrap)
+        );
+
         // DIFFUSION VAO, EBO, VBO, SHADERS
 
         int diffusionVao = GL43.glGenVertexArrays();
@@ -161,9 +154,6 @@ public class Dynamic
         int diffusionVbo = GL43.glGenBuffers();
         GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, diffusionVbo);
         GL43.glBufferData(GL43.GL_ARRAY_BUFFER, QUAD_VERTICES, GL43.GL_STATIC_DRAW);
-//        int diffusionEbo = GL43.glGenBuffers();
-//        GL43.glBindBuffer(GL43.GL_ELEMENT_ARRAY_BUFFER, diffusionEbo);
-//        GL43.glBufferData(GL43.GL_ELEMENT_ARRAY_BUFFER, SQUARE_INDICES, GL43.GL_STATIC_DRAW);
 
         int diffusionShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER, "dynamic/shaders/vertex/dynamic.vert");
         int diffusionFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
@@ -228,26 +218,11 @@ public class Dynamic
         glfwSwapInterval(1);
         glfwShowWindow(window);
 
-        //1. bind the bootstrap framebuffer and draw our bootstrap image, writing to our input texture.
-        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
-        GL43.glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
-        GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
-
-        GL43.glUseProgram(bootstrapShaderProgram);
-        GL43.glBindVertexArray(boostrapVao);
-        GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
+        //Load initial data into the (first) texture specified by textureIdentifier
+        doBootstrap(fbo, textureIdentifier, bootstrapShaderProgram, bootstrap);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
-
-        //Then, in a loop:
-
-        //2. bind the diffusion framebuffer and draw our diffusion image, passing in texture from previous stage.
-
-        //3. bind the render framebuffer and render on screen, and also output to a new texture to be passed into step 2.
-
-        //then, in a loop:
 
         boolean swap = true;
         while (!glfwWindowShouldClose(window)) {
@@ -288,19 +263,50 @@ public class Dynamic
         glfwTerminate();
     }
 
-    private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback(int fbo, int textureIdentifier, int rbo) {
+    private static void doBootstrap(int fbo, int textureIdentifier, int bootstrapShaderProgram, int boostrapVao) {
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
+        bindTexture(textureIdentifier);
+        GL43.glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
+        GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
+
+        GL43.glUseProgram(bootstrapShaderProgram);
+        GL43.glBindVertexArray(boostrapVao);
+        GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
+    }
+
+    private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback(final int fbo,
+                                                                        final int textureIdentifier,
+                                                                        final int otherTextureIdentifier,
+                                                                        final int rbo,
+                                                                        final int bootstrapShaderProgram,
+                                                                        final int bootstrapVao) {
         return (win, width, height) -> {
             this.width = width;
             this.height = height;
             GL43.glViewport(0, 0, this.width, this.height);
 
-            setupFramebuffer(fbo, textureIdentifier, rbo);
+            setupFramebuffer(fbo, rbo);
+            setupTexture(textureIdentifier);
+            bindTexture(textureIdentifier);
+            setupTexture(otherTextureIdentifier);
+            bindTexture(otherTextureIdentifier);
+            doBootstrap(fbo, textureIdentifier, bootstrapShaderProgram, bootstrapVao);
         };
     }
 
-    private void setupFramebuffer(int fbo, int textureIdentifier, int rbo) {
+    private void setupFramebuffer(int fbo, int rbo) {
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
+        GL43.glBindRenderbuffer(GL43.GL_RENDERBUFFER, rbo);
+        GL43.glRenderbufferStorage(GL43.GL_RENDERBUFFER, GL43.GL_DEPTH24_STENCIL8, width, height);
+        GL43.glFramebufferRenderbuffer(GL43.GL_FRAMEBUFFER, GL43.GL_DEPTH_STENCIL_ATTACHMENT, GL43.GL_RENDERBUFFER, rbo);
 
+        if (GL43.glCheckFramebufferStatus(GL43.GL_FRAMEBUFFER) != GL43.GL_FRAMEBUFFER_COMPLETE) {
+            System.out.println("Frame buffer was not completed");
+        }
+    }
+
+    private void setupTexture(int textureIdentifier) {
         GL43.glBindTexture(GL43.GL_TEXTURE_2D, textureIdentifier);
         GL43.glTexImage2D(GL43.GL_TEXTURE_2D,
                 0,
@@ -311,16 +317,6 @@ public class Dynamic
                 GL43.GL_RGB,
                 GL43.GL_UNSIGNED_BYTE,
                 (ByteBuffer) null);
-
-        bindTexture(textureIdentifier);
-
-        GL43.glBindRenderbuffer(GL43.GL_RENDERBUFFER, rbo);
-        GL43.glRenderbufferStorage(GL43.GL_RENDERBUFFER, GL43.GL_DEPTH24_STENCIL8, width, height);
-        GL43.glFramebufferRenderbuffer(GL43.GL_FRAMEBUFFER, GL43.GL_DEPTH_STENCIL_ATTACHMENT, GL43.GL_RENDERBUFFER, rbo);
-
-        if (GL43.glCheckFramebufferStatus(GL43.GL_FRAMEBUFFER) != GL43.GL_FRAMEBUFFER_COMPLETE) {
-            System.out.println("Frame buffer was not completed");
-        }
     }
 
     private static void bindTexture(int textureIdentifier) {
