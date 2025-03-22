@@ -47,24 +47,9 @@ public class Dynamic
     private int width = 800;
     private int height = 600;
 
+    private final String title;
     private final String dynamicShaderResourceLocation;
     private final String bootstrapShaderResourceLocation;
-
-    //View settings
-    private double previousCoordMouseX = 0.0f;
-    private double previousCoordMouseY = 0.0f;
-    private double coordOriginX = 0.0f;
-    private double coordOriginY = 0.0f;
-    private double coordXWidth = 2.0f;
-    private double coordYWidth = 2.0f;
-
-    private final float ZOOM_SENSITIVITY = 0.1f;
-    private double coordMouseX;
-    private double coordMouseY;
-
-    //Iterations
-    private double globalZoom = 1.0;
-    private int maxIterations = 50;
 
     private static final float[] QUAD_VERTICES = {
             // (x, y) , (texX, texY)
@@ -76,18 +61,8 @@ public class Dynamic
             1.0f, 1.0f, 1.0f, 1.0f
     };
 
-    private static final float[] SQUARE_VERTICES = {
-            1.0f, 1.0f, 0.0f, // top right
-            1.0f, -1.0f, 0.0f, // bottom right
-            -1.0f, -1.0f, 0.0f, // bottom left
-            -1.0f, 1.0f, 0.0f // top left
-    };
-    private static final int[] SQUARE_INDICES = {
-      0, 1, 3, //first triangle
-      1, 2, 3 //second triangle
-    };
-
-    public Dynamic(final String dynamicShaderResourceLocation, String bootstrapShaderResourceLocation) {
+    public Dynamic(final String title, final String dynamicShaderResourceLocation, String bootstrapShaderResourceLocation) {
+        this.title = title;
         this.dynamicShaderResourceLocation = dynamicShaderResourceLocation;
         this.bootstrapShaderResourceLocation = bootstrapShaderResourceLocation;
     }
@@ -104,7 +79,7 @@ public class Dynamic
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-        long window = glfwCreateWindow(width, height, "Mandelbrot", NULL, NULL);
+        long window = glfwCreateWindow(width, height, title, NULL, NULL);
 
         if (window == NULL) {
             glfwTerminate();
@@ -124,9 +99,6 @@ public class Dynamic
                     glfwSetWindowShouldClose(window, true);
             }
         });
-
-        glfwSetScrollCallback(window, getScrollCallback());
-        glfwSetCursorPosCallback(window, getCursorPosCallback());
 
         int fbo = GL43.glGenFramebuffers();
         int textureIdentifier = GL43.glGenTextures();
@@ -357,41 +329,6 @@ public class Dynamic
 
         GL43.glFramebufferTexture2D(GL43.GL_FRAMEBUFFER, GL43.GL_COLOR_ATTACHMENT0, GL43.GL_TEXTURE_2D,
                 textureIdentifier, 0);
-    }
-
-    private GLFWScrollCallbackI getScrollCallback() {
-        return (window, xOffset, yOffset) ->
-        {
-            float zoom = (float) Math.exp(yOffset * ZOOM_SENSITIVITY);
-            globalZoom *= zoom;
-
-            coordOriginX = coordMouseX + (coordOriginX - coordMouseX) / zoom;
-            coordOriginY = coordMouseY + (coordOriginY - coordMouseY) / zoom;
-
-            coordXWidth *= 1/zoom;
-            coordYWidth *= 1/zoom;
-
-            maxIterations = Math.max(50, (int)(50 * Math.pow(globalZoom, 0.1)));
-//            System.out.printf("Magnification: %s%n", Math.log10(globalZoom));
-        };
-    }
-
-    private GLFWCursorPosCallbackI getCursorPosCallback() {
-        return (window, xpos, ypos) ->
-        {
-            previousCoordMouseX = coordMouseX;
-            previousCoordMouseY = coordMouseY;
-
-            double screenMouseX = (2 * (xpos - width /2.0)/ width);
-            double screenMouseY = - (2 * (ypos - height /2.0)/ height);
-            coordMouseX = coordOriginX + screenMouseX * coordXWidth;
-            coordMouseY = coordOriginY + screenMouseY * coordYWidth;
-
-            if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-                coordOriginX = coordOriginX + (previousCoordMouseX - coordMouseX);
-                coordOriginY = coordOriginY + (previousCoordMouseY - coordMouseY);
-            }
-        };
     }
 
 }
