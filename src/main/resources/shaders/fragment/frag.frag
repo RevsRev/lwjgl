@@ -2,7 +2,7 @@
 
 in vec4 vertexPosition; // input variable from vs (same name and type)
 
-uniform vec4 coordInfo;
+uniform dvec4 coordInfo;
 uniform vec4 backgroundColor;
 uniform vec4 setColor;
 uniform int maxIterations;
@@ -15,10 +15,10 @@ void main()
     double zR = 0.0;
     double zI = 0.0;
 
-    float originX = coordInfo.x;
-    float originY = coordInfo.y;
-    float xWidth = coordInfo.z;
-    float yWidth = coordInfo.w;
+    double originX = coordInfo.x;
+    double originY = coordInfo.y;
+    double xWidth = coordInfo.z;
+    double yWidth = coordInfo.w;
 
     double cR = double((vertexPosition.x * xWidth) + originX);
     double cI = double((vertexPosition.y * yWidth) + originY);
