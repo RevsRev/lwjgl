@@ -67,7 +67,7 @@ public class Main
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+//        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         long window = glfwCreateWindow(WIDTH, HEIGHT, "Mandelbrot", NULL, NULL);
 
@@ -78,7 +78,7 @@ public class Main
 
         glfwMakeContextCurrent(window);
         GL.createCapabilities();
-        GL43.glViewport(0, 0, 800, 600);
+        GL43.glViewport(0, 0, WIDTH, HEIGHT);
 
         glfwSetFramebufferSizeCallback(
                 window,

@@ -1,25 +1,27 @@
-#version 330 core
+#version 430 core
 out vec4 FragColor;
-in vec2 vertexPosition; // input variable from vs (same name and type)
+in vec4 vertexPosition; // input variable from vs (same name and type)
 void main()
 {
-    float zR = 0.0;
-    float zI = 0.0;
+    //Mandelbrot set
+    double zR = 0.0;
+    double zI = 0.0;
 
-    float cR = vertexPosition.x;
-    float cI = vertexPosition.y;
+    double cR = double(vertexPosition.x * 2.5);
+    double cI = double(vertexPosition.y * 2.5);
 
-    for(int i=0;i<50;++i)
-    {
+    double normSquared = zR * zR + zI * zI;
+    int i = 0;
+    int limit = 100;
+    while (normSquared < 4 && i < limit) {
+        double prevZR = zR;
         zR = zR * zR - zI * zI + cR;
-        zI = 2 * zR * zI + cI;
+        zI = 2.0 * prevZR * zI + cI;
+        normSquared = zR * zR + zI * zI;
+        i++;
     }
 
-    float normSquared = zR * zR + zI * zI;
-    float color = 1.0;
-    if (normSquared < 4) {
-        color = 0.0;
-    }
+    float color = i * (1.0 / limit);
 
     FragColor = vec4(color, color, color, 1.0);
 }
