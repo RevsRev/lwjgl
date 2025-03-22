@@ -1,6 +1,7 @@
 package github.com.rev;
 
 import org.lwjgl.glfw.GLFWCursorPosCallbackI;
+import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.opengl.GL;
@@ -27,6 +28,7 @@ import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
@@ -42,14 +44,24 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Main
 {
-    private static final int WIDTH = 800;
-    private static final int HEIGHT = 600;
+    private static int WIDTH = 800;
+    private static int HEIGHT = 600;
 
     //View settings
-    private static float zoom = 1.0f;
+    private static float screenMouseX = 0.0f;
+    private static float screenMouseY = 0.0f;
+    private static float coordOriginX = 0.0f;
+    private static float coordOriginY = 0.0f;
+    private static float coordXWidth = 2.0f;
+    private static float coordYWidth = 2.0f;
+
     private static final float ZOOM_SENSITIVITY = 0.1f;
-    private static float mouseX;
-    private static float mouseY;
+    private static float coordMouseX;
+    private static float coordMouseY;
+
+    //Iterations
+    private static double globalZoom = 1.0;
+    private static int maxIterations = 50;
 
     private static final float[] TRIANGLE_VERTICES = {
             -0.5f, -0.5f, 0.0f,
@@ -89,13 +101,13 @@ public class Main
         }
 
         glfwMakeContextCurrent(window);
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR);
         GL.createCapabilities();
         GL43.glViewport(0, 0, WIDTH, HEIGHT);
 
         glfwSetFramebufferSizeCallback(
                 window,
-                (win, width, height) -> GL43.glViewport(0, 0, width, height)
+                getGlfwFramebufferSizeCallback()
         );
 
         glfwSetKeyCallback(window, new GLFWKeyCallback() {
@@ -108,6 +120,7 @@ public class Main
         });
 
         glfwSetScrollCallback(window, getScrollCallback());
+        glfwSetCursorPosCallback(window, getCursorPosCallback());
 
         int vao = GL43.glGenVertexArrays();
         GL43.glBindVertexArray(vao);
@@ -181,10 +194,11 @@ public class Main
                 setColorRGB[2],
                 1.0f);
 
-        int zoomLocation = GL43.glGetUniformLocation(shaderProgram, "zoom");
-        GL43.glUniform1f(zoomLocation, zoom);
-        int mouseLocation = GL43.glGetUniformLocation(shaderProgram, "mousePos");
-        GL43.glUniform2f(mouseLocation, mouseX, mouseY);
+        int coordinateInfoLocation = GL43.glGetUniformLocation(shaderProgram, "coordInfo");
+        GL43.glUniform4f(coordinateInfoLocation, coordOriginX, coordOriginY, coordXWidth, coordYWidth);
+
+        int maxIterationsLocation = GL43.glGetUniformLocation(shaderProgram, "maxIterations");
+        GL43.glUniform1i(maxIterationsLocation, maxIterations);
 
         // linked, so we don't need anymore :)
         GL43.glDeleteShader(vertexShader);
@@ -203,7 +217,8 @@ public class Main
             // Drawing triangle demo
 //            GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 3);
 
-            GL43.glUniform1f(zoomLocation, zoom);
+            GL43.glUniform4f(coordinateInfoLocation, coordOriginX, coordOriginY, coordXWidth, coordYWidth);
+            GL43.glUniform1i(maxIterationsLocation, maxIterations);
 
             // Drawing square
             GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
@@ -215,18 +230,38 @@ public class Main
         glfwTerminate();
     }
 
+    private static GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback() {
+        return (win, width, height) -> {
+            WIDTH = width;
+            HEIGHT = height;
+            GL43.glViewport(0, 0, WIDTH, HEIGHT);
+        };
+    }
+
     private static GLFWScrollCallbackI getScrollCallback() {
         return (window, xOffset, yOffset) ->
         {
-            zoom *= (float) Math.exp(yOffset * ZOOM_SENSITIVITY);
+            float zoom = (float) Math.exp(yOffset * ZOOM_SENSITIVITY);
+            globalZoom *= zoom;
+
+            coordOriginX = coordMouseX + (coordOriginX - coordMouseX) / zoom;
+            coordOriginY = coordMouseY + (coordOriginY - coordMouseY) / zoom;
+
+            coordXWidth *= 1/zoom;
+            coordYWidth *= 1/zoom;
+
+            maxIterations = Math.max(50, (int)(50 * Math.pow(globalZoom, 0.25)));
+            System.out.printf("Max Iterations: %s%n:", maxIterations);
         };
     }
 
     private static GLFWCursorPosCallbackI getCursorPosCallback() {
         return (window, xpos, ypos) ->
         {
-            mouseX = (float) xpos;
-            mouseY = (float) ypos;
+            screenMouseX = (float) (2 * (xpos - WIDTH/2.0)/WIDTH);
+            screenMouseY = - (float) (2 * (ypos - HEIGHT/2.0)/HEIGHT);
+            coordMouseX = coordOriginX + screenMouseX * coordXWidth;
+            coordMouseY = coordOriginY + screenMouseY * coordYWidth;
         };
     }
 
