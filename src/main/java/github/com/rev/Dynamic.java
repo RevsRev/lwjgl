@@ -13,44 +13,26 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
-import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
-import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
-import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
-import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
-import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
-import static org.lwjgl.glfw.GLFW.glfwInit;
-import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
-import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
-import static org.lwjgl.glfw.GLFW.glfwTerminate;
-import static org.lwjgl.glfw.GLFW.glfwWindowHint;
-import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
-import static org.lwjgl.system.MemoryUtil.NULL;
 
-public class Dynamic
+public final class Dynamic extends WindowedProgram
 {
-    private int width = 800;
-    private int height = 800;
 
-    private final String title;
     private final String dynamicShaderResourceLocation;
     private final String bootstrapShaderResourceLocation;
     private final Map<String, Function<Long, Float>> dynamicShaderProgramUniformFloats;
     private final Map<String, Integer> dynamicShaderProgramUniformStringToId = new HashMap<>();
     private final Optional<Runnable> sleepStrategy;
+
+    boolean swap = true;
+    boolean shouldResize = false;
+    long prevTime = System.nanoTime();
+    long time = prevTime;
 
     private static final float[] QUAD_VERTICES = {
             // (x, y) , (texX, texY)
@@ -61,6 +43,17 @@ public class Dynamic
             1.0f, -1.0f, 1.0f, 0.0f,
             1.0f, 1.0f, 1.0f, 1.0f
     };
+    private int textureIdentifier;
+    private int textureIdentifierSwap;
+    private int fbo;
+    private int dynamicShaderProgram;
+    private int dynamicVao;
+    private int renderShaderProgram;
+    private int renderVao;
+    private int otherTextureIdentifier;
+    private int rbo;
+    private int bootstrapShaderProgram;
+    private int bootstrapVao;
 
     public Dynamic(final String title,
                    final String dynamicShaderResourceLocation,
@@ -72,52 +65,24 @@ public class Dynamic
                    final String bootstrapShaderResourceLocation,
                    Map<String, Function<Long, Float>> dynamicShaderProgramUniformFloats,
                    Optional<Runnable> sleepStrategy) {
-        this.title = title;
+        super(title);
         this.dynamicShaderResourceLocation = dynamicShaderResourceLocation;
         this.bootstrapShaderResourceLocation = bootstrapShaderResourceLocation;
         this.dynamicShaderProgramUniformFloats = dynamicShaderProgramUniformFloats;
         this.sleepStrategy = sleepStrategy;
     }
 
-    public void run()
-    {
-        if (!glfwInit()) {
-            throw new IllegalStateException("Unable to initialize GLFW");
-        }
-
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
-        long window = glfwCreateWindow(width, height, title, NULL, NULL);
-
-        if (window == NULL) {
-            glfwTerminate();
-            return;
-        }
-
-        glfwMakeContextCurrent(window);
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR);
+    @Override
+    public void init() {
         GL.createCapabilities();
         GL43.glViewport(0, 0, width, height);
 
-        glfwSetKeyCallback(window, new GLFWKeyCallback() {
-            public void invoke(long window, int key, int scancode, int action, int mods) {
-                if (action != GLFW_RELEASE)
-                    return;
-                if (key == GLFW_KEY_ESCAPE)
-                    glfwSetWindowShouldClose(window, true);
-            }
-        });
+        fbo = GL43.glGenFramebuffers();
+        textureIdentifier = GL43.glGenTextures();
+        textureIdentifierSwap = GL43.glGenTextures();
+        rbo = GL43.glGenRenderbuffers();
 
-        int fbo = GL43.glGenFramebuffers();
-        int textureIdentifier = GL43.glGenTextures();
-        int textureIdentifierSwap = GL43.glGenTextures();
-        int rbo = GL43.glGenRenderbuffers();
-
-        setupFramebuffer(fbo, rbo);
+        setupFramebuffer();
 
         setupTexture(textureIdentifier);
         bindTexture(textureIdentifier);
@@ -128,8 +93,8 @@ public class Dynamic
 
         // BOOTSTRAP VAO, VBO SHADERS
 
-        int bootstrap = GL43.glGenVertexArrays();
-        GL43.glBindVertexArray(bootstrap);
+        bootstrapVao = GL43.glGenVertexArrays();
+        GL43.glBindVertexArray(bootstrapVao);
 
         int bootstrapVbo = GL43.glGenBuffers();
         GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, bootstrapVbo);
@@ -140,7 +105,7 @@ public class Dynamic
         int bootstrapFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
                 bootstrapShaderResourceLocation);
 
-        int bootstrapShaderProgram = GL43.glCreateProgram();
+        bootstrapShaderProgram = GL43.glCreateProgram();
         GL43.glAttachShader(bootstrapShaderProgram, bootstrapVertexShader);
         GL43.glAttachShader(bootstrapShaderProgram, bootstrapFragmentShader);
         GL43.glLinkProgram(bootstrapShaderProgram);
@@ -159,15 +124,9 @@ public class Dynamic
         GL43.glEnableVertexAttribArray(1);
         GL43.glVertexAttribPointer(1, 2, GL43.GL_FLOAT, false, 4 * 4, 2 * 4);
 
-        glfwSetFramebufferSizeCallback(
-                window,
-                getGlfwFramebufferSizeCallback(fbo, textureIdentifier, textureIdentifierSwap, rbo,
-                        bootstrapShaderProgram, bootstrap)
-        );
-
         // DYNAMIC VAO, EBO, VBO, SHADERS
 
-        int dynamicVao = GL43.glGenVertexArrays();
+        dynamicVao = GL43.glGenVertexArrays();
         GL43.glBindVertexArray(dynamicVao);
 
         int dynamicVbo = GL43.glGenBuffers();
@@ -178,7 +137,7 @@ public class Dynamic
         int dynamicFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
                 dynamicShaderResourceLocation);
 
-        int dynamicShaderProgram = GL43.glCreateProgram();
+        dynamicShaderProgram = GL43.glCreateProgram();
         GL43.glAttachShader(dynamicShaderProgram, dynamicVertexShader);
         GL43.glAttachShader(dynamicShaderProgram, dynamicFragmentShader);
         GL43.glLinkProgram(dynamicShaderProgram);
@@ -207,7 +166,7 @@ public class Dynamic
 
         // RENDER VAO, VBO, SHADERS
 
-        int renderVao = GL43.glGenVertexArrays();
+        renderVao = GL43.glGenVertexArrays();
         GL43.glBindVertexArray(renderVao);
 
         int renderVbo = GL43.glGenBuffers();
@@ -219,7 +178,7 @@ public class Dynamic
         int renderFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
                 "fractal/shaders/fragment/render.frag");
 
-        int renderShaderProgram = GL43.glCreateProgram();
+        renderShaderProgram = GL43.glCreateProgram();
         GL43.glAttachShader(renderShaderProgram, renderVertexShader);
         GL43.glAttachShader(renderShaderProgram, renderFragmentShader);
         GL43.glLinkProgram(renderShaderProgram);
@@ -238,73 +197,68 @@ public class Dynamic
         GL43.glEnableVertexAttribArray(1);
         GL43.glVertexAttribPointer(1, 2, GL43.GL_FLOAT, false, 4 * 4, 2 * 4);
 
-        glfwSwapInterval(1);
-        glfwShowWindow(window);
-
         //Load initial data into the (first) texture specified by textureIdentifier
-        doBootstrap(fbo, textureIdentifier, bootstrapShaderProgram, bootstrap);
+        doBootstrap(textureIdentifier);
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        glfwSwapInterval(1);
+    }
 
-        long prevTime = System.nanoTime();
-        long time = prevTime;
+    @Override
+    public void run()
+    {
+        if (shouldResize) {
+            resize();
+            shouldResize = false;
+        }
+
 
         long deltaT = 10;
 
-        boolean swap = true;
-        while (!glfwWindowShouldClose(window)) {
 
-            time = System.nanoTime();
+        time = System.nanoTime();
 
-            int texOne = swap ? textureIdentifier : textureIdentifierSwap; //The texture I want to read from
-            int texTwo = swap ? textureIdentifierSwap : textureIdentifier; //The texture I want to write to
+        int texOne = swap ? textureIdentifier : textureIdentifierSwap; //The texture I want to read from
+        int texTwo = swap ? textureIdentifierSwap : textureIdentifier; //The texture I want to write to
 
-            GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
-            bindTexture(texTwo);
-            GL43.glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
-            GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
-            GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
-            GL43.glBindTexture(GL43.GL_TEXTURE_2D, texOne);
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
+        bindTexture(texTwo);
+        GL43.glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
+        GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
+        GL43.glBindTexture(GL43.GL_TEXTURE_2D, texOne);
 
-            GL43.glUseProgram(dynamicShaderProgram);
-            GL43.glBindVertexArray(dynamicVao);
+        GL43.glUseProgram(dynamicShaderProgram);
+        GL43.glBindVertexArray(dynamicVao);
 
-            //Set uniforms we use in the program
-            for (Map.Entry<String, Function<Long, Float>> uniformNameAndFunc : dynamicShaderProgramUniformFloats.entrySet()) {
-                String uniformName = uniformNameAndFunc.getKey();
-                Function<Long, Float> func = uniformNameAndFunc.getValue();
-                float value = func.apply(deltaT);
-                GL43.glUniform1f(dynamicShaderProgramUniformStringToId.get(uniformName), value);
-            }
-
-//            GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
-            GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
-
-            GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
-            GL43.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-            GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
-
-            GL43.glUseProgram(renderShaderProgram);
-            GL43.glBindVertexArray(renderVao);
-            GL43.glDisable(GL43.GL_DEPTH_TEST);
-            GL43.glBindTexture(GL43.GL_TEXTURE_2D, texTwo);
-
-            GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
-
-            glfwSwapBuffers(window);
-            glfwPollEvents();
-
-            swap = !swap;
-
-            deltaT = System.nanoTime() - time;
-            sleepStrategy.ifPresent(Runnable::run); //slow the simulation down, but don't increase the step of the simulation
+        //Set uniforms we use in the program
+        for (Map.Entry<String, Function<Long, Float>> uniformNameAndFunc : dynamicShaderProgramUniformFloats.entrySet()) {
+            String uniformName = uniformNameAndFunc.getKey();
+            Function<Long, Float> func = uniformNameAndFunc.getValue();
+            float value = func.apply(deltaT);
+            GL43.glUniform1f(dynamicShaderProgramUniformStringToId.get(uniformName), value);
         }
 
-        glfwTerminate();
+//            GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
+        GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
+
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
+        GL43.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
+
+        GL43.glUseProgram(renderShaderProgram);
+        GL43.glBindVertexArray(renderVao);
+        GL43.glDisable(GL43.GL_DEPTH_TEST);
+        GL43.glBindTexture(GL43.GL_TEXTURE_2D, texTwo);
+
+        GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
+
+        swap = !swap;
+
+        deltaT = System.nanoTime() - time;
+        sleepStrategy.ifPresent(Runnable::run); //slow the simulation down, but don't increase the step of the simulation
     }
 
-    private static void doBootstrap(int fbo, int textureIdentifier, int bootstrapShaderProgram, int boostrapVao) {
+    private void doBootstrap(int textureIdentifier) {
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
         bindTexture(textureIdentifier);
         GL43.glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -312,31 +266,11 @@ public class Dynamic
         GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
 
         GL43.glUseProgram(bootstrapShaderProgram);
-        GL43.glBindVertexArray(boostrapVao);
+        GL43.glBindVertexArray(bootstrapVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
     }
 
-    private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback(final int fbo,
-                                                                        final int textureIdentifier,
-                                                                        final int otherTextureIdentifier,
-                                                                        final int rbo,
-                                                                        final int bootstrapShaderProgram,
-                                                                        final int bootstrapVao) {
-        return (win, width, height) -> {
-            this.width = width;
-            this.height = height;
-            GL43.glViewport(0, 0, this.width, this.height);
-
-            setupFramebuffer(fbo, rbo);
-            setupTexture(textureIdentifier);
-            bindTexture(textureIdentifier);
-            setupTexture(otherTextureIdentifier);
-            bindTexture(otherTextureIdentifier);
-            doBootstrap(fbo, textureIdentifier, bootstrapShaderProgram, bootstrapVao);
-        };
-    }
-
-    private void setupFramebuffer(int fbo, int rbo) {
+    private void setupFramebuffer() {
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
         GL43.glBindRenderbuffer(GL43.GL_RENDERBUFFER, rbo);
         GL43.glRenderbufferStorage(GL43.GL_RENDERBUFFER, GL43.GL_DEPTH24_STENCIL8, width, height);
@@ -360,7 +294,7 @@ public class Dynamic
                 (ByteBuffer) null);
     }
 
-    private static void bindTexture(int textureIdentifier) {
+    private void bindTexture(int textureIdentifier) {
         GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MIN_FILTER, GL43.GL_LINEAR);
         GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MAG_FILTER, GL43.GL_LINEAR);
 
@@ -368,4 +302,42 @@ public class Dynamic
                 textureIdentifier, 0);
     }
 
+    @Override
+    public void setupCallbacks(long window) {
+        glfwSetKeyCallback(window, new GLFWKeyCallback() {
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (action != GLFW_RELEASE)
+                    return;
+                if (key == GLFW_KEY_ESCAPE)
+                    glfwSetWindowShouldClose(window, true);
+            }
+        });
+        glfwSetFramebufferSizeCallback(
+                window,
+                getGlfwFramebufferSizeCallback()
+        );
+    }
+
+    private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback() {
+        return (win, width, height) -> {
+            this.width = width;
+            this.height = height;
+            this.shouldResize = true;
+        };
+    }
+
+    private void resize() {
+        GL43.glViewport(0, 0, this.width, this.height);
+
+        int texture = swap ? textureIdentifier : textureIdentifierSwap; //Bootstrap to the correct texture!
+        int otherTexture = swap ? textureIdentifierSwap : textureIdentifier;
+
+        setupFramebuffer();
+        setupTexture(texture);
+        bindTexture(texture);
+        setupTexture(otherTexture);
+        bindTexture(otherTexture);
+
+        doBootstrap(texture);
+    }
 }

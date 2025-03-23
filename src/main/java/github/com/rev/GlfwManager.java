@@ -1,7 +1,5 @@
 package github.com.rev;
 
-import org.lwjgl.opengl.GL;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -67,16 +65,11 @@ public final class GlfwManager {
             final long window = programAndWindow.getValue();
             final WindowedProgram program = programAndWindow.getKey();
             Thread t = new Thread(() -> {
-
-//                glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-//                glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-//                glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-//                glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-
                 try {
                    glfwMakeContextCurrent(window);
                    program.init();
                     glfwShowWindow(window);
+//                    glfwSwapBuffers(window);
                    while (!glfwWindowShouldClose(window)) {
                        program.run();
                        glfwSwapBuffers(window);

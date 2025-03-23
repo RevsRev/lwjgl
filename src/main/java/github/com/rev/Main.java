@@ -1,6 +1,7 @@
 package github.com.rev;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class Main
 {
@@ -14,28 +15,13 @@ public class Main
         MandelJulia mandelJulia = MandelJulia.create();
         mandelJulia.run();
 
-//        Fractal mandelbrot = new Fractal("Mandelbrot", "fractal/impl/mandelbrot/mandelbrot.frag");
-//        mandelbrot.run();
-
-//        final Fractal mandelbrot = new Fractal("Mandelbrot", "fractal/impl/mandelbrot.frag");
-//        mandelbrot.run();
-
-//        final Fractal julia = new Fractal(
-//                "Julia",
-//                "fractal/impl/julia.frag",
-//                Map.of(
-//                        "cR", () -> -0.79,
-//                        "cI", () -> 0.15
-//                )
-//        );
-//        julia.run();
-
-//        MandelJulia mandelJulia = MandelJulia.create();
-//        mandelJulia.run();
-
+//        GlfwManager manager = GlfwManager.instance();
 //        Dynamic dynamic = new Dynamic("Right Drift Demo", "dynamic/impl/right_drift.frag", "dynamic/impl/right_drift_bootstrap.frag");
-//        dynamic.run();
+//        manager.addWindowedProgram(dynamic);
+//        manager.run();
 
+
+//        GlfwManager manager = GlfwManager.instance();
 //        // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
 //        float deltaX = 0.01f;
 //        float deltaT = 0.245f * deltaX * deltaX;
@@ -49,7 +35,8 @@ public class Main
 //                ),
 //                Optional.empty()
 //        );
-//        diffusion.run();
+//        manager.addWindowedProgram(diffusion);
+//        manager.run();
 
     }
 
