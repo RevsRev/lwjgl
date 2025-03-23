@@ -11,9 +11,20 @@ out vec4 FragColor;
 
 void main()
 {
-    //Julia set at 0
-    double cR = -0.79;
-    double cI = 0.15;
+    //Some interesting starting points
+//    double cR = -0.79;
+//    double cI = 0.15;
+//    double cR = -0.162;
+//    double cI = 1.04;
+//    double cR = 0.3;
+//    double cI = -0.01;
+//    double cR = -1.476;
+//    double cI = 0.0;
+//    double cR = -0.12;
+//    double cI = 0.77;
+    double cR = 0.28;
+    double cI = 0.008;
+
 
     double originX = coordInfo.x;
     double originY = coordInfo.y;
