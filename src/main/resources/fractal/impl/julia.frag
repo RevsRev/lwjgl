@@ -6,6 +6,8 @@ uniform dvec4 coordInfo;
 uniform vec4 backgroundColor;
 uniform vec4 setColor;
 uniform int maxIterations;
+uniform double cR;
+uniform double cI;
 
 out vec4 FragColor;
 
@@ -22,8 +24,8 @@ void main()
 //    double cI = 0.0;
 //    double cR = -0.12;
 //    double cI = 0.77;
-    double cR = 0.28;
-    double cI = 0.008;
+//    double cR = 0.28;
+//    double cI = 0.008;
 
 
     double originX = coordInfo.x;

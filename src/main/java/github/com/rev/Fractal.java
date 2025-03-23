@@ -4,12 +4,17 @@ import github.com.rev.util.ShaderUtils;
 import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
 import java.awt.Color;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
@@ -33,6 +38,7 @@ import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
@@ -48,6 +54,9 @@ public class Fractal
     private int width = 800;
     private int height = 600;
 
+    private boolean ready = false;
+    private boolean stopped = false;
+
     //View settings
     private double previousCoordMouseX = 0.0f;
     private double previousCoordMouseY = 0.0f;
@@ -56,9 +65,16 @@ public class Fractal
     private double coordXWidth = 2.0f;
     private double coordYWidth = 2.0f;
 
+    private double coordMouseClickX;
+    private double coordMouseClickY;
+
     private final float ZOOM_SENSITIVITY = 0.1f;
     private double coordMouseX;
     private double coordMouseY;
+
+    //Additional parameter injection
+    private final Map<String, Supplier<Double>> dynamicShaderProgramUniformFloats;
+    private final Map<String, Integer> dynamicShaderProgramUniformStringToId = new HashMap<>();
 
     //Iterations
     private double globalZoom = 1.0;
@@ -89,11 +105,25 @@ public class Fractal
     };
 
     public Fractal(String title, String fractalFragmentShaderResourcePath) {
+        this(title, fractalFragmentShaderResourcePath, Collections.emptyMap());
+    }
+    public Fractal(final String title,
+                   final String fractalFragmentShaderResourcePath,
+                   final Map<String, Supplier<Double>> dynamicShaderProgramUniformFloats) {
         this.title = title;
         this.fractalFragmentShaderResourcePath = fractalFragmentShaderResourcePath;
+        this.dynamicShaderProgramUniformFloats = dynamicShaderProgramUniformFloats;
     }
 
-    public void run()
+    public void run() {
+        try {
+            runImpl();
+        } finally {
+            stopped = true;
+        }
+    }
+
+    public void runImpl()
     {
         if (!glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
@@ -128,6 +158,7 @@ public class Fractal
 
         glfwSetScrollCallback(window, getScrollCallback());
         glfwSetCursorPosCallback(window, getCursorPosCallback());
+        glfwSetMouseButtonCallback(window, getMouseButtonCallback());
 
         int fbo = GL43.glGenFramebuffers();
         int textureIdentifier = GL43.glGenTextures();
@@ -170,6 +201,10 @@ public class Fractal
         }
 
         GL43.glUseProgram(fractalShaderProgram);
+
+        for (String uniformName : dynamicShaderProgramUniformFloats.keySet()) {
+            dynamicShaderProgramUniformStringToId.put(uniformName, GL43.glGetUniformLocation(fractalShaderProgram, uniformName));
+        }
 
         int backgroundColorShaderLocation = GL43.glGetUniformLocation(fractalShaderProgram, "backgroundColor");
         int setColorShaderLocation = GL43.glGetUniformLocation(fractalShaderProgram, "setColor");
@@ -239,6 +274,8 @@ public class Fractal
         glfwSwapInterval(1);
         glfwShowWindow(window);
 
+        ready = true;
+
         while (!glfwWindowShouldClose(window)) {
             GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
             GL43.glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -247,6 +284,14 @@ public class Fractal
 
             GL43.glUseProgram(fractalShaderProgram);
             GL43.glBindVertexArray(fractalVao);
+
+            //Set any additional uniforms
+            for (Map.Entry<String, Supplier<Double>> uniformNameAndFunc : dynamicShaderProgramUniformFloats.entrySet()) {
+                String uniformName = uniformNameAndFunc.getKey();
+                Supplier<Double> supplier = uniformNameAndFunc.getValue();
+                double value = supplier.get();
+                GL43.glUniform1d(dynamicShaderProgramUniformStringToId.get(uniformName), value);
+            }
 
             GL43.glUniform4d(coordinateInfoLocation, coordOriginX, coordOriginY, coordXWidth, coordYWidth);
             GL43.glUniform1i(maxIterationsLocation, maxIterations);
@@ -268,6 +313,16 @@ public class Fractal
         }
 
         glfwTerminate();
+    }
+
+    private GLFWMouseButtonCallbackI getMouseButtonCallback() {
+        return (window, button, action, mods) ->
+        {
+            if (button == GLFW_RELEASE) {
+                coordMouseClickX = coordMouseX;
+                coordMouseClickY = coordMouseY;
+            }
+        };
     }
 
     private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback(int fbo, int textureIdentifier, int rbo) {
@@ -344,4 +399,17 @@ public class Fractal
         };
     }
 
+    public boolean getReady() {
+        return ready;
+    }
+    public boolean getStopped() {
+        return stopped;
+    }
+
+    public double getCoordMouseClickX() {
+        return coordMouseClickX;
+    }
+    public double getCoordMouseClickY() {
+        return coordMouseClickY;
+    }
 }

@@ -1,5 +1,7 @@
 package github.com.rev;
 
+import java.util.Map;
+
 public class Main
 {
 
@@ -8,8 +10,21 @@ public class Main
 //        Fractal mandelbrot = new Fractal("Mandelbrot", "fractal/impl/mandelbrot/mandelbrot.frag");
 //        mandelbrot.run();
 
-        Fractal julia = new Fractal("Julia", "fractal/impl/julia.frag");
-        julia.run();
+//        final Fractal mandelbrot = new Fractal("Mandelbrot", "fractal/impl/mandelbrot.frag");
+//        mandelbrot.run();
+
+//        final Fractal julia = new Fractal(
+//                "Julia",
+//                "fractal/impl/julia.frag",
+//                Map.of(
+//                        "cR", () -> -0.79,
+//                        "cI", () -> 0.15
+//                )
+//        );
+//        julia.run();
+
+        MandelJulia mandelJulia = MandelJulia.create();
+        mandelJulia.run();
 
 //        Dynamic dynamic = new Dynamic("Right Drift Demo", "dynamic/impl/right_drift.frag", "dynamic/impl/right_drift_bootstrap.frag");
 //        dynamic.run();
