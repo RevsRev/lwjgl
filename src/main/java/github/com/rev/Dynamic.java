@@ -215,9 +215,9 @@ public class Dynamic
         GL43.glBufferData(GL43.GL_ARRAY_BUFFER, QUAD_VERTICES, GL43.GL_STATIC_DRAW);
 
         int renderVertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER,
-                "mandlebrot/shaders/vertex/render.vert");
+                "fractal/shaders/vertex/render.vert");
         int renderFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
-                "mandlebrot/shaders/fragment/render.frag");
+                "fractal/shaders/fragment/render.frag");
 
         int renderShaderProgram = GL43.glCreateProgram();
         GL43.glAttachShader(renderShaderProgram, renderVertexShader);

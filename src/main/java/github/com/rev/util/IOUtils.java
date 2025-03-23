@@ -1,6 +1,6 @@
 package github.com.rev.util;
 
-import github.com.rev.Mandelbrot;
+import github.com.rev.Fractal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,7 +11,7 @@ public final class IOUtils {
     private IOUtils(){}
 
     public static CharSequence readCharSequence(String resourcePath) {
-        try (InputStream is = Mandelbrot.class.getClassLoader().getResourceAsStream(resourcePath)) {
+        try (InputStream is = Fractal.class.getClassLoader().getResourceAsStream(resourcePath)) {
             if (is == null) {
                 throw new RuntimeException(String.format("Failed to load resource '%s'", resourcePath));
             }
