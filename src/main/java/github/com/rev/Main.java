@@ -7,6 +7,13 @@ public class Main
 
     public static void main(String[] args) {
 
+//        GlfwManager manager = GlfwManager.instance();
+//        manager.addWindowedProgram(new Fractal("Mandelbrot", "fractal/impl/mandelbrot.frag"));
+//        manager.run();
+
+        MandelJulia mandelJulia = MandelJulia.create();
+        mandelJulia.run();
+
 //        Fractal mandelbrot = new Fractal("Mandelbrot", "fractal/impl/mandelbrot/mandelbrot.frag");
 //        mandelbrot.run();
 
@@ -23,8 +30,8 @@ public class Main
 //        );
 //        julia.run();
 
-        MandelJulia mandelJulia = MandelJulia.create();
-        mandelJulia.run();
+//        MandelJulia mandelJulia = MandelJulia.create();
+//        mandelJulia.run();
 
 //        Dynamic dynamic = new Dynamic("Right Drift Demo", "dynamic/impl/right_drift.frag", "dynamic/impl/right_drift_bootstrap.frag");
 //        dynamic.run();

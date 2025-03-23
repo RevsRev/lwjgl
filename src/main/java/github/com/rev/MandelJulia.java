@@ -26,28 +26,11 @@ public final class MandelJulia {
     }
 
     public void run() {
-        Thread mandelRunThread = new Thread(mandelbrot::run);
 
-        Thread juliaRunThread = new Thread(() -> {
-            while (!mandelbrot.getReady()) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            julia.run();
-        });
+        GlfwManager manager = GlfwManager.instance();
+        manager.addWindowedProgram(mandelbrot);
+        manager.addWindowedProgram(julia);
 
-        mandelRunThread.start();
-        juliaRunThread.start();
-
-        while (!mandelbrot.getStopped() || !julia.getStopped()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        manager.run();
     }
 }

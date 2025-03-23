@@ -1,3 +1,6 @@
+### JVM error logs from when I mess something up in opengl###
+**.log
+
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
