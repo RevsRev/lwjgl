@@ -7,6 +7,11 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
@@ -38,11 +43,14 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class Dynamic
 {
     private int width = 800;
-    private int height = 600;
+    private int height = 800;
 
     private final String title;
     private final String dynamicShaderResourceLocation;
     private final String bootstrapShaderResourceLocation;
+    private final Map<String, Function<Long, Float>> dynamicShaderProgramUniformFloats;
+    private final Map<String, Integer> dynamicShaderProgramUniformStringToId = new HashMap<>();
+    private final Optional<Runnable> sleepStrategy;
 
     private static final float[] QUAD_VERTICES = {
             // (x, y) , (texX, texY)
@@ -54,10 +62,21 @@ public class Dynamic
             1.0f, 1.0f, 1.0f, 1.0f
     };
 
-    public Dynamic(final String title, final String dynamicShaderResourceLocation, String bootstrapShaderResourceLocation) {
+    public Dynamic(final String title,
+                   final String dynamicShaderResourceLocation,
+                   final String bootstrapShaderResourceLocation) {
+        this(title, dynamicShaderResourceLocation, bootstrapShaderResourceLocation, Collections.emptyMap(), Optional.empty());
+    }
+    public Dynamic(final String title,
+                   final String dynamicShaderResourceLocation,
+                   final String bootstrapShaderResourceLocation,
+                   Map<String, Function<Long, Float>> dynamicShaderProgramUniformFloats,
+                   Optional<Runnable> sleepStrategy) {
         this.title = title;
         this.dynamicShaderResourceLocation = dynamicShaderResourceLocation;
         this.bootstrapShaderResourceLocation = bootstrapShaderResourceLocation;
+        this.dynamicShaderProgramUniformFloats = dynamicShaderProgramUniformFloats;
+        this.sleepStrategy = sleepStrategy;
     }
 
     public void run()
@@ -146,35 +165,39 @@ public class Dynamic
                         bootstrapShaderProgram, bootstrap)
         );
 
-        // DIFFUSION VAO, EBO, VBO, SHADERS
+        // DYNAMIC VAO, EBO, VBO, SHADERS
 
-        int diffusionVao = GL43.glGenVertexArrays();
-        GL43.glBindVertexArray(diffusionVao);
+        int dynamicVao = GL43.glGenVertexArrays();
+        GL43.glBindVertexArray(dynamicVao);
 
-        int diffusionVbo = GL43.glGenBuffers();
-        GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, diffusionVbo);
+        int dynamicVbo = GL43.glGenBuffers();
+        GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, dynamicVbo);
         GL43.glBufferData(GL43.GL_ARRAY_BUFFER, QUAD_VERTICES, GL43.GL_STATIC_DRAW);
 
-        int diffusionShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER, "dynamic/shaders/vertex/dynamic.vert");
-        int diffusionFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
+        int dynamicVertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER, "dynamic/shaders/vertex/dynamic.vert");
+        int dynamicFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
                 dynamicShaderResourceLocation);
 
-        int diffusionShaderProgram = GL43.glCreateProgram();
-        GL43.glAttachShader(diffusionShaderProgram, diffusionShader);
-        GL43.glAttachShader(diffusionShaderProgram, diffusionFragmentShader);
-        GL43.glLinkProgram(diffusionShaderProgram);
+        int dynamicShaderProgram = GL43.glCreateProgram();
+        GL43.glAttachShader(dynamicShaderProgram, dynamicVertexShader);
+        GL43.glAttachShader(dynamicShaderProgram, dynamicFragmentShader);
+        GL43.glLinkProgram(dynamicShaderProgram);
 
         int[] linkStatus = new int[1];
-        GL43.glGetProgramiv(diffusionShaderProgram, GL43.GL_LINK_STATUS, linkStatus);
+        GL43.glGetProgramiv(dynamicShaderProgram, GL43.GL_LINK_STATUS, linkStatus);
         if (linkStatus[0] != 1) {
-            System.out.println(GL43.glGetProgramInfoLog(diffusionShaderProgram));
+            System.out.println(GL43.glGetProgramInfoLog(dynamicShaderProgram));
         }
 
-        GL43.glUseProgram(diffusionShaderProgram);
+        GL43.glUseProgram(dynamicShaderProgram);
+
+        for (String uniformName : dynamicShaderProgramUniformFloats.keySet()) {
+            dynamicShaderProgramUniformStringToId.put(uniformName, GL43.glGetUniformLocation(dynamicShaderProgram, uniformName));
+        }
 
         // linked, so we don't need anymore :)
-        GL43.glDeleteShader(diffusionShader);
-        GL43.glDeleteShader(diffusionFragmentShader);
+        GL43.glDeleteShader(dynamicVertexShader);
+        GL43.glDeleteShader(dynamicFragmentShader);
 
         GL43.glEnableVertexAttribArray(0);
         GL43.glVertexAttribPointer(0, 2, GL43.GL_FLOAT, false, 4 * 4, 0);
@@ -224,8 +247,15 @@ public class Dynamic
         glfwSwapBuffers(window);
         glfwPollEvents();
 
+        long prevTime = System.nanoTime();
+        long time = prevTime;
+
+        long deltaT = 10;
+
         boolean swap = true;
         while (!glfwWindowShouldClose(window)) {
+
+            time = System.nanoTime();
 
             int texOne = swap ? textureIdentifier : textureIdentifierSwap; //The texture I want to read from
             int texTwo = swap ? textureIdentifierSwap : textureIdentifier; //The texture I want to write to
@@ -237,8 +267,16 @@ public class Dynamic
             GL43.glEnable(GL43.GL_DEPTH_TEST); //TODO - We don't actually need this!
             GL43.glBindTexture(GL43.GL_TEXTURE_2D, texOne);
 
-            GL43.glUseProgram(diffusionShaderProgram);
-            GL43.glBindVertexArray(diffusionVao);
+            GL43.glUseProgram(dynamicShaderProgram);
+            GL43.glBindVertexArray(dynamicVao);
+
+            //Set uniforms we use in the program
+            for (Map.Entry<String, Function<Long, Float>> uniformNameAndFunc : dynamicShaderProgramUniformFloats.entrySet()) {
+                String uniformName = uniformNameAndFunc.getKey();
+                Function<Long, Float> func = uniformNameAndFunc.getValue();
+                float value = func.apply(deltaT);
+                GL43.glUniform1f(dynamicShaderProgramUniformStringToId.get(uniformName), value);
+            }
 
 //            GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
             GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
@@ -258,6 +296,9 @@ public class Dynamic
             glfwPollEvents();
 
             swap = !swap;
+
+            deltaT = System.nanoTime() - time;
+            sleepStrategy.ifPresent(Runnable::run); //slow the simulation down, but don't increase the step of the simulation
         }
 
         glfwTerminate();
