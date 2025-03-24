@@ -23,8 +23,10 @@ import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 public final class Dynamic extends WindowedProgram
 {
 
+    public static final String DEFAULT_DYNAMIC_FRAGMENT_SHADER_LOCATION = "dynamic/shaders/fragment/render.frag";
     private final String dynamicShaderResourceLocation;
     private final String bootstrapShaderResourceLocation;
+    private final String renderShaderResourceLocation;
     private final Map<String, Function<Long, Float>> dynamicShaderProgramUniformFloats;
     private final Map<String, Integer> dynamicShaderProgramUniformStringToId = new HashMap<>();
     private final Optional<Runnable> sleepStrategy;
@@ -58,18 +60,36 @@ public final class Dynamic extends WindowedProgram
     public Dynamic(final String title,
                    final String dynamicShaderResourceLocation,
                    final String bootstrapShaderResourceLocation) {
-        this(title, dynamicShaderResourceLocation, bootstrapShaderResourceLocation, Collections.emptyMap(), Optional.empty());
+        this(title,
+                dynamicShaderResourceLocation,
+                bootstrapShaderResourceLocation,
+                Collections.emptyMap(),
+                Optional.empty());
     }
     public Dynamic(final String title,
                    final String dynamicShaderResourceLocation,
                    final String bootstrapShaderResourceLocation,
                    Map<String, Function<Long, Float>> dynamicShaderProgramUniformFloats,
                    Optional<Runnable> sleepStrategy) {
+        this(title,
+                dynamicShaderResourceLocation,
+                bootstrapShaderResourceLocation,
+                dynamicShaderProgramUniformFloats,
+                sleepStrategy,
+                DEFAULT_DYNAMIC_FRAGMENT_SHADER_LOCATION);
+    }
+    public Dynamic(final String title,
+                   final String dynamicShaderResourceLocation,
+                   final String bootstrapShaderResourceLocation,
+                   Map<String, Function<Long, Float>> dynamicShaderProgramUniformFloats,
+                   Optional<Runnable> sleepStrategy,
+                   String renderShaderResourceLocation) {
         super(title);
         this.dynamicShaderResourceLocation = dynamicShaderResourceLocation;
         this.bootstrapShaderResourceLocation = bootstrapShaderResourceLocation;
         this.dynamicShaderProgramUniformFloats = dynamicShaderProgramUniformFloats;
         this.sleepStrategy = sleepStrategy;
+        this.renderShaderResourceLocation = renderShaderResourceLocation;
     }
 
     @Override
@@ -174,9 +194,9 @@ public final class Dynamic extends WindowedProgram
         GL43.glBufferData(GL43.GL_ARRAY_BUFFER, QUAD_VERTICES, GL43.GL_STATIC_DRAW);
 
         int renderVertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER,
-                "fractal/shaders/vertex/render.vert");
+                "dynamic/shaders/vertex/render.vert");
         int renderFragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER,
-                "fractal/shaders/fragment/render.frag");
+                renderShaderResourceLocation);
 
         renderShaderProgram = GL43.glCreateProgram();
         GL43.glAttachShader(renderShaderProgram, renderVertexShader);
@@ -243,12 +263,13 @@ public final class Dynamic extends WindowedProgram
 
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
         GL43.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
+        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
 
         GL43.glUseProgram(renderShaderProgram);
         GL43.glBindVertexArray(renderVao);
         GL43.glDisable(GL43.GL_DEPTH_TEST);
         GL43.glBindTexture(GL43.GL_TEXTURE_2D, texTwo);
+        GL43.glUniform1i(GL43.glGetUniformLocation(renderShaderProgram, "screenTexture"), 0);
 
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
 
