@@ -108,11 +108,5 @@ void main()
         r = 1.0;
     }
 
-    //Only going to diffuse red for this demo!
-//    FragColor = vec4(vec3(texture(screenTexture, TexCoords)), 1.0);
-//    FragColor = vec4(r, 0.0, 0.0, 1.0);
     FragColor = vec4(color, 1.0);
-
-//    FragColor = vec4(toDiffuseAmount(vec3(texture(screenTexture, TexCoords))), 0.0, 0.0, 1.0);
-
 }

@@ -24,7 +24,7 @@ public class Main
 
         GlfwManager manager = GlfwManager.instance();
         // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
-        float deltaX = 0.005f;
+        float deltaX = 0.01f;
         float deltaT = 0.245f * deltaX * deltaX;
 
         Dynamic diffusion = new Dynamic("Diffusion Equation demo",
