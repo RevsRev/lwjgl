@@ -22,4 +22,25 @@ public final class ShaderUtils {
         return shaderIdentifier;
     }
 
+    public static int setupShaderProgram(final String vertexShaderPath, final String fragmentShaderPath) {
+        int vertexShader = ShaderUtils.loadShader(GL43.GL_VERTEX_SHADER, vertexShaderPath);
+        int fragmentShader = ShaderUtils.loadShader(GL43.GL_FRAGMENT_SHADER, fragmentShaderPath);
+
+        int shaderProgram = GL43.glCreateProgram();
+        GL43.glAttachShader(shaderProgram, vertexShader);
+        GL43.glAttachShader(shaderProgram, fragmentShader);
+        GL43.glLinkProgram(shaderProgram);
+
+
+        int[] boostrapLinkStatus = new int[1];
+        GL43.glGetProgramiv(shaderProgram, GL43.GL_LINK_STATUS, boostrapLinkStatus);
+        if (boostrapLinkStatus[0] != 1) {
+            System.out.println(GL43.glGetProgramInfoLog(shaderProgram));
+        }
+        GL43.glDeleteShader(vertexShader);
+        GL43.glDeleteShader(fragmentShader);
+
+        return shaderProgram;
+    }
+
 }
