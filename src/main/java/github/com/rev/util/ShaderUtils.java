@@ -35,6 +35,7 @@ public final class ShaderUtils {
         int[] boostrapLinkStatus = new int[1];
         GL43.glGetProgramiv(shaderProgram, GL43.GL_LINK_STATUS, boostrapLinkStatus);
         if (boostrapLinkStatus[0] != 1) {
+            System.out.printf("Vertex: %s%nFragment: %s%n", vertexShaderPath, fragmentShaderPath);
             System.out.println(GL43.glGetProgramInfoLog(shaderProgram));
         }
         GL43.glDeleteShader(vertexShader);
