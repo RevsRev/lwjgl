@@ -15,7 +15,7 @@ void main()
     velocity = vec3(0.0);
 
     if (inCircle(vertexPosition, vec2(0.0), 0.1f)) {
-        position = vec3(0.0, 0.0, 0.0);
-        velocity = vec3(0.1, 0.0, 0.0);
+        position = vec3(1.0, 0.0, 0.0);
+//        velocity = vec3(0.1, 0.0, 0.0);
     }
 }

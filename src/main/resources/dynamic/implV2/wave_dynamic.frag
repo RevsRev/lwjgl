@@ -56,7 +56,7 @@ void main()
 
     float kernel[9] = float[](
         mu / 6.0,       2 * mu / 3.0,       mu / 6.0,
-        2 * mu / 3.0,   1 - 10/3.0 * mu,    2 * mu / 3.0,
+        2 * mu / 3.0,   - 10/3.0 * mu,    2 * mu / 3.0,
         mu / 6.0,       2 * mu / 3.0,       mu / 6.0
     );
 
@@ -68,6 +68,8 @@ void main()
     position = vec3(texture(inputPosition, TexCoords.st)) + deltaT * vec3(texture(inputVelocity, TexCoords.st));
     for(int i = 0; i < 9; i++)
     {
-        velocity += kernel[i] * vec3(texture(inputPosition, TexCoords.st + offsets[i]));
+        vec3 gradDt = kernel[i] * vec3(texture(inputPosition, TexCoords.st + offsets[i]));
+        velocity += gradDt;
+        position += deltaT * gradDt / 2;
     }
 }

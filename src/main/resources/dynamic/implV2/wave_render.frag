@@ -13,5 +13,6 @@ float toColor(float height) {
 void main()
 {
     vec3 col = texture(inputPosition, TexCoords).rgb;
-    FragColor = vec4(toColor(col.x), 0.0, 0.0, 1.0f);
+    FragColor = vec4(toColor(col.x), toColor(col.x), toColor(col.x), 1.0f);
+//    FragColor = vec4(col.x, 0.0, 0.0, 1.0f);
 }
