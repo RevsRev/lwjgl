@@ -111,9 +111,10 @@ public class Main
                 "dynamic/implV2/v2_diffusion_bootstrap.frag",
                 "dynamic/implV2/v2_diffusion_dynamic.frag",
                 "dynamic/implV2/v2_diffusion_render.frag",
-                Set.of(new UniformPrimative("deltaX", true, id -> GL43.glUniform1f(id, deltaX)),
-                        new UniformPrimative("deltaT", true, id -> GL43.glUniform1f(id, deltaT))),
-                new int[]{GL43.GL_COLOR_ATTACHMENT0},
+                Set.of(
+                        new UniformPrimative("deltaX", true, id -> GL43.glUniform1f(id, deltaX)),
+                        new UniformPrimative("deltaT", true, id -> GL43.glUniform1f(id, deltaT))
+                ),
                 new String[]{"screenTexture"}
         );
         t.addOption("diffusionV2", Set.of(diffusionV2));
@@ -154,7 +155,6 @@ public class Main
                         new UniformArray<>("offsets", true, (f, id) -> GL43.glUniform2f(id, f[0], f[1]), offsets),
                         new UniformArray<>("kernel", true, (f, id) -> GL43.glUniform1f(id, f), kernel)
                 ),
-                new int[]{GL43.GL_COLOR_ATTACHMENT0, GL43.GL_COLOR_ATTACHMENT1},
                 new String[]{"inputPosition", "inputVelocity"}
         );
         t.addOption("wave", Set.of(wave));

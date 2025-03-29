@@ -1,6 +1,8 @@
 package github.com.rev;
 
-import github.com.rev.gl.GBuffer;
+import github.com.rev.gl.texture.SwappingTexture;
+import github.com.rev.gl.texture.Texture;
+import github.com.rev.gl.texture.Textures;
 import github.com.rev.gl.uniform.Uniform;
 import github.com.rev.util.ShaderUtils;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
@@ -8,7 +10,9 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
@@ -19,7 +23,6 @@ import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 
 public final class DynamicV2 extends WindowedProgram
 {
-    private boolean swap = true;
     private boolean resize = false;
 
     private final String bootstrapFragmentShaderResource;
@@ -65,18 +68,25 @@ public final class DynamicV2 extends WindowedProgram
 
     //Textures & Layers
     private final String[] layerUniformNames;
-    private final GBuffer primaryGBuffer;
-    private final GBuffer secondaryGBuffer;
+    private final SwappingTexture swappingTexture;
 
     public DynamicV2(String title, String bootstrapFragmentShaderResource, String dynamicFragmentShaderResource,
-                     String renderFramentShaderResource, Collection<Uniform> uniforms, int[] layers, String[] layerUniformNames) {
+                     String renderFramentShaderResource, Collection<Uniform> uniforms, String[] layerUniformNames) {
         super(title);
         this.bootstrapFragmentShaderResource = bootstrapFragmentShaderResource;
         this.dynamicFragmentShaderResource = dynamicFragmentShaderResource;
         this.renderFramentShaderResource = renderFramentShaderResource;
         this.layerUniformNames = layerUniformNames;
-        this.primaryGBuffer = new GBuffer(layers);
-        this.secondaryGBuffer = new GBuffer(layers);
+
+        List<Texture> primary = new ArrayList<>();
+        List<Texture> secondary = new ArrayList<>();
+        for (int i = 0; i < layerUniformNames.length; i++) {
+            Texture tPrimary = new Texture(i);
+            Texture tSecondary = new Texture(i);
+            primary.add(tPrimary);
+            secondary.add(tSecondary);
+        }
+        this.swappingTexture = new SwappingTexture(new Textures(primary), new Textures(secondary));
 
         this.dynamicConstantUniforms = uniforms.stream().filter(Uniform::isConstant).collect(Collectors.toSet());
         this.dynamicNonConstantUniforms = uniforms.stream().filter(u -> !u.isConstant()).collect(Collectors.toSet());
@@ -87,8 +97,7 @@ public final class DynamicV2 extends WindowedProgram
         GL.createCapabilities();
         GL43.glViewport(0, 0, width, height);
 
-        primaryGBuffer.init(width, height);
-        secondaryGBuffer.init(width, height);
+        swappingTexture.init(width, height);
 
         fbo = GL43.glGenFramebuffers();
         rbo = GL43.glGenRenderbuffers();
@@ -121,9 +130,6 @@ public final class DynamicV2 extends WindowedProgram
                 bootstrapFragmentShaderResource
         );
 
-        GL43.glUseProgram(bootstrapShaderProgram);
-        GL43.glUniform1i(GL43.glGetUniformLocation(bootstrapShaderProgram, "screenTexture"), 0); //TODO - Is this necessary?
-
         /* *****************************
                 DYNAMIC PROGRAM
         ******************************/
@@ -147,7 +153,7 @@ public final class DynamicV2 extends WindowedProgram
 
         GL43.glUseProgram(dynamicShaderProgram);
         for (int i = 0; i < layerUniformNames.length; i++) {
-            GL43.glUniform1i(GL43.glGetUniformLocation(dynamicShaderProgram, layerUniformNames[i]), i); //TODO - Is this necessary?
+            GL43.glUniform1i(GL43.glGetUniformLocation(dynamicShaderProgram, layerUniformNames[i]), i);
         }
 
         for (Uniform dynamicConstantUniform : dynamicConstantUniforms) {
@@ -178,7 +184,7 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glUseProgram(renderShaderProgram);
         GL43.glUniform1i(GL43.glGetUniformLocation(renderShaderProgram, "screenTexture"), 0);
 
-        doBootstrap(primaryGBuffer, fbo);
+        doBootstrap();
     }
 
     @Override
@@ -189,10 +195,7 @@ public final class DynamicV2 extends WindowedProgram
             return;
         }
 
-        GBuffer first = swap ? primaryGBuffer : secondaryGBuffer; //The textures I want to read from
-        GBuffer second = swap ? secondaryGBuffer : primaryGBuffer; //The textures I want to write to
-
-        int fboInUse = swap ? fboTwo : fbo;
+        int fboInUse = swappingTexture.isSwap() ? fboTwo : fbo;
 
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fboInUse);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
@@ -202,8 +205,8 @@ public final class DynamicV2 extends WindowedProgram
             nonConstantUniform.bind(dynamicShaderProgram);
         }
 
-        second.bindForWriting();
-        first.bindForReading();
+        GL43.glDrawBuffers(swappingTexture.bindForWriting());
+        swappingTexture.bindForReading();
 
         GL43.glBindVertexArray(dynamicVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
@@ -211,12 +214,12 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(renderShaderProgram);
-        second.bindForReading();
+        swappingTexture.bindForReading();
 
         GL43.glBindVertexArray(renderVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
 
-        swap = !swap;
+        swappingTexture.swap();
     }
 
     @Override
@@ -258,26 +261,24 @@ public final class DynamicV2 extends WindowedProgram
     private void resize() {
         GL43.glViewport(0, 0, this.width, this.height);
 
-        GBuffer first = swap ? primaryGBuffer : secondaryGBuffer; //Bootstrap to the correct texture!
-
-        int bootstrapFbo = swap ? fbo : fboTwo;
-
         setupFramebuffer(fbo, rbo);
         setupFramebuffer(fboTwo, rboTwo);
-        primaryGBuffer.resize(width, height);
-        secondaryGBuffer.resize(width, height);
+        swappingTexture.resize(width, height);
 
-        doBootstrap(first, bootstrapFbo);
+        doBootstrap();
     }
 
-    private void doBootstrap(GBuffer gBuffer, int fbo) {
-        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
-        gBuffer.bindForWriting();
+    private void doBootstrap() {
+        int bootstrapFbo = swappingTexture.isSwap() ? fboTwo : fbo;
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, bootstrapFbo);
+        GL43.glDrawBuffers(swappingTexture.bindForWriting());
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
 
         GL43.glUseProgram(bootstrapShaderProgram);
         GL43.glBindVertexArray(bootstrapVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
+
+        swappingTexture.swap();
     }
 
 }

@@ -40,12 +40,12 @@ public class Texture implements TextureOperations {
         GL43.glBindTexture(GL43.GL_TEXTURE_2D, texId);
         GL43.glFramebufferTexture2D(
                 GL43.GL_FRAMEBUFFER,
-                layer,
+                GL43.GL_COLOR_ATTACHMENT0 + layer,
                 GL43.GL_TEXTURE_2D,
                 texId,
                 0
         );
-        return new int[]{layer};
+        return new int[]{GL43.GL_COLOR_ATTACHMENT0 + layer};
     }
 
     @Override
