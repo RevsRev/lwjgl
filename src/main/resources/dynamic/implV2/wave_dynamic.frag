@@ -15,7 +15,6 @@ uniform float kernel[9];
 
 void main()
 {
-    float col = 0.0;
     velocity = vec3(texture(inputVelocity, TexCoords.st));
     position = vec3(texture(inputPosition, TexCoords.st)) + deltaT * vec3(texture(inputVelocity, TexCoords.st));
     for(int i = 0; i < 9; i++)
