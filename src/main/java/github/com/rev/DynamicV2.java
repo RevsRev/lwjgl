@@ -1,5 +1,6 @@
 package github.com.rev;
 
+import github.com.rev.gl.GBuffer;
 import github.com.rev.gl.uniform.Uniform;
 import github.com.rev.util.ShaderUtils;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
@@ -7,7 +8,6 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
@@ -64,7 +64,6 @@ public final class DynamicV2 extends WindowedProgram
     private int renderShaderProgram;
 
     //Textures & Layers
-    private final int[] layers;
     private final String[] layerUniformNames;
     private final GBuffer primaryGBuffer;
     private final GBuffer secondaryGBuffer;
@@ -75,7 +74,6 @@ public final class DynamicV2 extends WindowedProgram
         this.bootstrapFragmentShaderResource = bootstrapFragmentShaderResource;
         this.dynamicFragmentShaderResource = dynamicFragmentShaderResource;
         this.renderFramentShaderResource = renderFramentShaderResource;
-        this.layers = layers;
         this.layerUniformNames = layerUniformNames;
         this.primaryGBuffer = new GBuffer(layers);
         this.secondaryGBuffer = new GBuffer(layers);
@@ -89,8 +87,8 @@ public final class DynamicV2 extends WindowedProgram
         GL.createCapabilities();
         GL43.glViewport(0, 0, width, height);
 
-        primaryGBuffer.init();
-        secondaryGBuffer.init();
+        primaryGBuffer.init(width, height);
+        secondaryGBuffer.init(width, height);
 
         fbo = GL43.glGenFramebuffers();
         rbo = GL43.glGenRenderbuffers();
@@ -204,7 +202,7 @@ public final class DynamicV2 extends WindowedProgram
             nonConstantUniform.bind(dynamicShaderProgram);
         }
 
-        second.bindToFramebufferForWriting(fboInUse);
+        second.bindForWriting();
         first.bindForReading();
 
         GL43.glBindVertexArray(dynamicVao);
@@ -266,15 +264,15 @@ public final class DynamicV2 extends WindowedProgram
 
         setupFramebuffer(fbo, rbo);
         setupFramebuffer(fboTwo, rboTwo);
-        primaryGBuffer.resize();
-        secondaryGBuffer.resize();
+        primaryGBuffer.resize(width, height);
+        secondaryGBuffer.resize(width, height);
 
         doBootstrap(first, bootstrapFbo);
     }
 
     private void doBootstrap(GBuffer gBuffer, int fbo) {
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
-        gBuffer.bindToFramebufferForWriting(fbo);
+        gBuffer.bindForWriting();
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
 
         GL43.glUseProgram(bootstrapShaderProgram);
@@ -282,62 +280,4 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
     }
 
-    private final class GBuffer {
-        private final int[] layers;
-        private final int[] texIds;
-
-        public GBuffer(int[] layers) {
-            this.layers = layers;
-            this.texIds = new int[layers.length];
-        }
-
-        public void init() {
-            for (int i = 0; i < layers.length; i++) {
-                int id = GL43.glGenTextures();
-                texIds[i] = id;
-                resize(id);
-            }
-        }
-
-        public void bindForReading() {
-            for (int i = 0; i < texIds.length; i++) {
-                GL43.glActiveTexture(GL43.GL_TEXTURE0 + i);
-                GL43.glBindTexture(GL43.GL_TEXTURE_2D, texIds[i]);
-            }
-        }
-
-        public void bindForReading(int layer) {
-            GL43.glActiveTexture(GL43.GL_TEXTURE0 + layer);
-            GL43.glBindTexture(GL43.GL_TEXTURE_2D, texIds[layer]);
-        }
-
-        public void bindToFramebufferForWriting(int fbo) {
-            GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
-            for (int i = 0; i < layers.length; i++) {
-                GL43.glBindTexture(GL43.GL_TEXTURE_2D, texIds[i]);
-                GL43.glFramebufferTexture2D(
-                        GL43.GL_FRAMEBUFFER,
-                        layers[i],
-                        GL43.GL_TEXTURE_2D,
-                        texIds[i],
-                        0
-                );
-            }
-            GL43.glDrawBuffers(layers);
-        }
-
-        public void resize() {
-            for (int i = 0; i < layers.length; i++) {
-                resize(texIds[i]);
-            }
-        }
-
-        private void resize(int texId) {
-            GL43.glBindTexture(GL43.GL_TEXTURE_2D, texId);
-            GL43.glTexImage2D(GL43.GL_TEXTURE_2D, 0, GL43.GL_RGBA16F, width, height, 0,
-                    GL43.GL_RGBA, GL43.GL_FLOAT, (ByteBuffer) null);
-            GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MIN_FILTER, GL43.GL_NEAREST);
-            GL43.glTexParameteri(GL43.GL_TEXTURE_2D, GL43.GL_TEXTURE_MAG_FILTER, GL43.GL_NEAREST);
-        }
-    }
 }
