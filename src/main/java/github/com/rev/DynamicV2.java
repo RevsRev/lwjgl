@@ -42,6 +42,8 @@ public final class DynamicV2 extends WindowedProgram
     //Framebuffer
     private int fbo;
     private int rbo; //TODO - Don't think we need this:)
+    private int fboTwo;
+    private int rboTwo; //TODO - Don't think we need this:)
 
     //Virtual Array Objects
     private int bootstrapVao;
@@ -84,6 +86,11 @@ public final class DynamicV2 extends WindowedProgram
         rbo = GL43.glGenRenderbuffers();
 
         setupFramebuffer(fbo, rbo);
+
+        fboTwo = GL43.glGenFramebuffers();
+        rboTwo = GL43.glGenRenderbuffers();
+
+        setupFramebuffer(fboTwo, rboTwo);
 
         /* *****************************
                 BOOTSTRAP PROGRAM
@@ -178,12 +185,15 @@ public final class DynamicV2 extends WindowedProgram
         GBuffer first = swap ? primaryGBuffer : secondaryGBuffer; //The textures I want to read from
         GBuffer second = swap ? secondaryGBuffer : primaryGBuffer; //The textures I want to write to
 
-        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
-        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
-        second.bindToFramebufferForWriting(fbo);
+        int fboInUse = swap ? fboTwo : fbo;
 
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fboInUse);
+        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(dynamicShaderProgram);
+
         dynamicFragmentUniformSetters.values().forEach(Runnable::run);
+
+        second.bindToFramebufferForWriting(fboInUse);
         first.bindForReading(0);
 
         GL43.glBindVertexArray(dynamicVao);
@@ -192,7 +202,7 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(renderShaderProgram);
-        secondaryGBuffer.bindForReading(0);
+        second.bindForReading(0);
 
         GL43.glBindVertexArray(renderVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);

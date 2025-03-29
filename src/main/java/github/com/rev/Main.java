@@ -32,8 +32,8 @@ public class Main
                 "dynamic/implV2/v2_diffusion_bootstrap.frag",
                 "dynamic/implV2/v2_diffusion_dynamic.frag",
                 "dynamic/implV2/v2_diffusion_render.frag",
-                Map.of(/*"deltaX", id -> GL43.glUniform1f(id, deltaX),
-                        "deltaT", id -> GL43.glUniform1f(id, deltaT)*/),
+                Map.of("deltaX", id -> GL43.glUniform1f(id, deltaX),
+                        "deltaT", id -> GL43.glUniform1f(id, deltaT)),
                 new int[]{GL43.GL_COLOR_ATTACHMENT0},
                 new String[]{"screenTexture"}
         );

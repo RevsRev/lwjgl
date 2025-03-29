@@ -22,9 +22,6 @@ float toDiffuseAmount(vec3 rgb)
 
 void main()
 {
-//    vec3 col = texture(screenTexture, TexCoords).rgb;
-//    float diffuse = toDiffuseAmount(col);
-//    FragColor = vec4(diffuse, 0.0, 0.0, 1.0f);
     vec3 col = texture(screenTexture, TexCoords).rgb;
     FragColor = vec4(col, 1.0f);
 }
