@@ -16,7 +16,7 @@ public class Main
         Terminal t = new Terminal();
 
         addMandelbrotJulia(t);
-        addDiffusionV1(t);
+        addDiffusionV1Options(t);
         addDiffusionV2(t);
         addWave(t);
 
@@ -37,12 +37,12 @@ public class Main
         t.addOption("mandelbrot", Set.of(mandlebrot, julia));
     }
 
-    private static void addDiffusionV1(final Terminal t) {
+    private static void addDiffusionV1Options(final Terminal t) {
         // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
         float deltaX = 0.01f;
         float deltaT = 0.245f * deltaX * deltaX;
 
-        Dynamic diffusion = new Dynamic("Diffusion Equation demo",
+        final Dynamic diffusion = new Dynamic("Diffusion Equation demo",
                 "dynamic/impl/diffusion.frag",
                 "dynamic/impl/diffusion_bootstrap.frag",
                 Map.of(
@@ -52,7 +52,7 @@ public class Main
                 Optional.empty(),
                 "dynamic/impl/diffusion_render.frag"
         );
-        Dynamic diffusionWithUnobfiscatedConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration",
+        final Dynamic diffusionWithUnobfiscatedConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration",
                 "dynamic/impl/diffusion.frag",
                 "dynamic/impl/diffusion_bootstrap.frag",
                 Map.of(
@@ -61,7 +61,7 @@ public class Main
                 ),
                 Optional.empty()
         );
-        Dynamic diffusionWithUnobfiscatedRConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration R component",
+        final Dynamic diffusionWithUnobfiscatedRConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration R component",
                 "dynamic/impl/diffusion.frag",
                 "dynamic/impl/diffusion_bootstrap.frag",
                 Map.of(
@@ -71,7 +71,7 @@ public class Main
                 Optional.empty(),
                 "dynamic/impl/diffusion_render_unobf_r.frag"
         );
-        Dynamic diffusionWithUnobfiscatedGConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration G component",
+        final Dynamic diffusionWithUnobfiscatedGConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration G component",
                 "dynamic/impl/diffusion.frag",
                 "dynamic/impl/diffusion_bootstrap.frag",
                 Map.of(
@@ -81,7 +81,7 @@ public class Main
                 Optional.empty(),
                 "dynamic/impl/diffusion_render_unobf_g.frag"
         );
-        Dynamic diffusionWithUnobfiscatedBConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration B component",
+        final Dynamic diffusionWithUnobfiscatedBConcentration = new Dynamic("Diffusion Equation demo - unobfiscated concentration B component",
                 "dynamic/impl/diffusion.frag",
                 "dynamic/impl/diffusion_bootstrap.frag",
                 Map.of(
@@ -105,7 +105,7 @@ public class Main
         // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
         float deltaX = 0.01f;
         float deltaT = 0.245f * deltaX * deltaX;
-        DynamicV2 diffusionV2 = new DynamicV2(
+        final DynamicV2 diffusionV2 = new DynamicV2(
                 "Diffusion V2",
                 "dynamic/implV2/v2_diffusion_bootstrap.frag",
                 "dynamic/implV2/v2_diffusion_dynamic.frag",
@@ -122,7 +122,7 @@ public class Main
         // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
         float deltaX = 0.01f;
         float deltaT = 0.245f * deltaX * deltaX;
-        DynamicV2 wave = new DynamicV2(
+        final DynamicV2 wave = new DynamicV2(
                 "Wave Equation",
                 "dynamic/implV2/wave_bootstrap.frag",
                 "dynamic/implV2/wave_dynamic.frag",
