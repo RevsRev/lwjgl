@@ -22,23 +22,39 @@ public class Main
 //        manager.addWindowedProgram(dynamic);
 //        manager.run();
 
-
         GlfwManager manager = GlfwManager.instance();
         // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
         float deltaX = 0.01f;
         float deltaT = 0.245f * deltaX * deltaX;
         DynamicV2 dynamicV2 = new DynamicV2(
-                "Diffusion V2",
-                "dynamic/implV2/v2_diffusion_bootstrap.frag",
-                "dynamic/implV2/v2_diffusion_dynamic.frag",
-                "dynamic/implV2/v2_diffusion_render.frag",
+                "Wave Equation",
+                "dynamic/implV2/wave_bootstrap.frag",
+                "dynamic/implV2/wave_dynamic.frag",
+                "dynamic/implV2/wave_render.frag",
                 Map.of("deltaX", id -> GL43.glUniform1f(id, deltaX),
                         "deltaT", id -> GL43.glUniform1f(id, deltaT)),
-                new int[]{GL43.GL_COLOR_ATTACHMENT0},
-                new String[]{"screenTexture"}
+                new int[]{GL43.GL_COLOR_ATTACHMENT0, GL43.GL_COLOR_ATTACHMENT1},
+                new String[]{"inputPosition", "inputVelocity"}
         );
         manager.addWindowedProgram(dynamicV2);
         manager.run();
+
+//        GlfwManager manager = GlfwManager.instance();
+//        // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
+//        float deltaX = 0.01f;
+//        float deltaT = 0.245f * deltaX * deltaX;
+//        DynamicV2 dynamicV2 = new DynamicV2(
+//                "Diffusion V2",
+//                "dynamic/implV2/v2_diffusion_bootstrap.frag",
+//                "dynamic/implV2/v2_diffusion_dynamic.frag",
+//                "dynamic/implV2/v2_diffusion_render.frag",
+//                Map.of("deltaX", id -> GL43.glUniform1f(id, deltaX),
+//                        "deltaT", id -> GL43.glUniform1f(id, deltaT)),
+//                new int[]{GL43.GL_COLOR_ATTACHMENT0},
+//                new String[]{"screenTexture"}
+//        );
+//        manager.addWindowedProgram(dynamicV2);
+//        manager.run();
 
 //        GlfwManager manager = GlfwManager.instance();
 //        DynamicV2 dynamicV2 = new DynamicV2(

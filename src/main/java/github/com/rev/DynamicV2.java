@@ -194,7 +194,7 @@ public final class DynamicV2 extends WindowedProgram
         dynamicFragmentUniformSetters.values().forEach(Runnable::run);
 
         second.bindToFramebufferForWriting(fboInUse);
-        first.bindForReading(0);
+        first.bindForReading();
 
         GL43.glBindVertexArray(dynamicVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
@@ -202,7 +202,7 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(renderShaderProgram);
-        second.bindForReading(0);
+        second.bindForReading();
 
         GL43.glBindVertexArray(renderVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
@@ -288,6 +288,7 @@ public final class DynamicV2 extends WindowedProgram
                         0
                 );
             }
+            GL43.glDrawBuffers(layers);
         }
 
         private void resize(int texId) {
