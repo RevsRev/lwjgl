@@ -2,12 +2,20 @@ package github.com.rev;
 
 import github.com.rev.gl.uniform.Uniform;
 import github.com.rev.util.ShaderUtils;
+import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
+import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.stream.Collectors;
+
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
+import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 
 public final class DynamicV2 extends WindowedProgram
 {
@@ -173,13 +181,14 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glUseProgram(renderShaderProgram);
         GL43.glUniform1i(GL43.glGetUniformLocation(renderShaderProgram, "screenTexture"), 0);
 
-        doBootstrap(primaryGBuffer);
+        doBootstrap(primaryGBuffer, fbo);
     }
 
     @Override
     public void run() {
         if (resize) {
-            //TODO - Implement!
+            resize();
+            resize = false;
             return;
         }
 
@@ -216,7 +225,26 @@ public final class DynamicV2 extends WindowedProgram
 
     @Override
     public void setupCallbacks(long window) {
+        glfwSetKeyCallback(window, new GLFWKeyCallback() {
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (action != GLFW_RELEASE)
+                    return;
+                if (key == GLFW_KEY_ESCAPE)
+                    glfwSetWindowShouldClose(window, true);
+            }
+        });
+        glfwSetFramebufferSizeCallback(
+                window,
+                getGlfwFramebufferSizeCallback()
+        );
+    }
 
+    private GLFWFramebufferSizeCallbackI getGlfwFramebufferSizeCallback() {
+        return (win, width, height) -> {
+            this.width = width;
+            this.height = height;
+            this.resize = true;
+        };
     }
 
     private void setupFramebuffer(int fbo, int rbo) {
@@ -231,7 +259,22 @@ public final class DynamicV2 extends WindowedProgram
         }
     }
 
-    private void doBootstrap(GBuffer gBuffer) {
+    private void resize() {
+        GL43.glViewport(0, 0, this.width, this.height);
+
+        GBuffer first = swap ? primaryGBuffer : secondaryGBuffer; //Bootstrap to the correct texture!
+
+        int bootstrapFbo = swap ? fbo : fboTwo;
+
+        setupFramebuffer(fbo, rbo);
+        setupFramebuffer(fboTwo, rboTwo);
+        primaryGBuffer.resize();
+        secondaryGBuffer.resize();
+
+        doBootstrap(first, bootstrapFbo);
+    }
+
+    private void doBootstrap(GBuffer gBuffer, int fbo) {
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
         gBuffer.bindToFramebufferForWriting(fbo);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
@@ -283,6 +326,12 @@ public final class DynamicV2 extends WindowedProgram
                 );
             }
             GL43.glDrawBuffers(layers);
+        }
+
+        public void resize() {
+            for (int i = 0; i < layers.length; i++) {
+                resize(texIds[i]);
+            }
         }
 
         private void resize(int texId) {
