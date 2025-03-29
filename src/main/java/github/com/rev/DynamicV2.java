@@ -1,13 +1,13 @@
 package github.com.rev;
 
+import github.com.rev.gl.uniform.Uniform;
 import github.com.rev.util.ShaderUtils;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL43;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 public final class DynamicV2 extends WindowedProgram
 {
@@ -18,8 +18,8 @@ public final class DynamicV2 extends WindowedProgram
     private final String dynamicFragmentShaderResource;
     private final String renderFramentShaderResource;
 
-    private final Map<String, Consumer<Integer>> dynamicFragmentUniforms;
-    private final Map<String, Runnable> dynamicFragmentUniformSetters = new HashMap<>();
+    private final Collection<Uniform> dynamicNonConstantUniforms;
+    private final Collection<Uniform> dynamicConstantUniforms;
 
     /* *****************************
                 VERTICES
@@ -41,9 +41,9 @@ public final class DynamicV2 extends WindowedProgram
 
     //Framebuffer
     private int fbo;
-    private int rbo; //TODO - Don't think we need this:)
+    private int rbo;
     private int fboTwo;
-    private int rboTwo; //TODO - Don't think we need this:)
+    private int rboTwo;
 
     //Virtual Array Objects
     private int bootstrapVao;
@@ -62,16 +62,18 @@ public final class DynamicV2 extends WindowedProgram
     private final GBuffer secondaryGBuffer;
 
     public DynamicV2(String title, String bootstrapFragmentShaderResource, String dynamicFragmentShaderResource,
-                     String renderFramentShaderResource, Map<String, Consumer<Integer>> dynamicFragmentUniforms, int[] layers, String[] layerUniformNames) {
+                     String renderFramentShaderResource, Collection<Uniform> uniforms, int[] layers, String[] layerUniformNames) {
         super(title);
         this.bootstrapFragmentShaderResource = bootstrapFragmentShaderResource;
         this.dynamicFragmentShaderResource = dynamicFragmentShaderResource;
         this.renderFramentShaderResource = renderFramentShaderResource;
-        this.dynamicFragmentUniforms = dynamicFragmentUniforms;
         this.layers = layers;
         this.layerUniformNames = layerUniformNames;
         this.primaryGBuffer = new GBuffer(layers);
         this.secondaryGBuffer = new GBuffer(layers);
+
+        this.dynamicConstantUniforms = uniforms.stream().filter(Uniform::isConstant).collect(Collectors.toSet());
+        this.dynamicNonConstantUniforms = uniforms.stream().filter(u -> !u.isConstant()).collect(Collectors.toSet());
     }
 
     @Override
@@ -142,10 +144,9 @@ public final class DynamicV2 extends WindowedProgram
             GL43.glUniform1i(GL43.glGetUniformLocation(dynamicShaderProgram, layerUniformNames[i]), i); //TODO - Is this necessary?
         }
 
-        for (Map.Entry<String, Consumer<Integer>> nameAndSetter : dynamicFragmentUniforms.entrySet()) {
-            String uniformName = nameAndSetter.getKey();
-            final int id = GL43.glGetUniformLocation(dynamicShaderProgram, uniformName);
-            dynamicFragmentUniformSetters.put(uniformName, () -> nameAndSetter.getValue().accept(id));
+        for (Uniform dynamicConstantUniform : dynamicConstantUniforms) {
+            final int id = GL43.glGetUniformLocation(dynamicShaderProgram, dynamicConstantUniform.getName());
+            dynamicConstantUniform.bind(id);
         }
 
         /* *****************************
@@ -191,7 +192,10 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(dynamicShaderProgram);
 
-        dynamicFragmentUniformSetters.values().forEach(Runnable::run);
+        for (Uniform nonConstantUniform : dynamicNonConstantUniforms) {
+            final int id = GL43.glGetUniformLocation(dynamicShaderProgram, nonConstantUniform.getName());
+            nonConstantUniform.bind(id);
+        }
 
         second.bindToFramebufferForWriting(fboInUse);
         first.bindForReading();
@@ -206,14 +210,6 @@ public final class DynamicV2 extends WindowedProgram
 
         GL43.glBindVertexArray(renderVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
-
-//        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
-//        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
-//        GL43.glUseProgram(renderShaderProgram);
-//        primaryGBuffer.bindForReading(0);
-//
-//        GL43.glBindVertexArray(renderVao);
-//        GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
 
         swap = !swap;
     }
@@ -238,8 +234,6 @@ public final class DynamicV2 extends WindowedProgram
     private void doBootstrap(GBuffer gBuffer) {
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
         gBuffer.bindToFramebufferForWriting(fbo);
-//        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
-//        gBuffer.bindToFramebufferForWriting(0);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
 
         GL43.glUseProgram(bootstrapShaderProgram);
