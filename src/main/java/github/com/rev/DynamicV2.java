@@ -153,8 +153,7 @@ public final class DynamicV2 extends WindowedProgram
         }
 
         for (Uniform dynamicConstantUniform : dynamicConstantUniforms) {
-            final int id = GL43.glGetUniformLocation(dynamicShaderProgram, dynamicConstantUniform.getName());
-            dynamicConstantUniform.bind(id);
+            dynamicConstantUniform.bind(dynamicShaderProgram);
         }
 
         /* *****************************
@@ -202,8 +201,7 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glUseProgram(dynamicShaderProgram);
 
         for (Uniform nonConstantUniform : dynamicNonConstantUniforms) {
-            final int id = GL43.glGetUniformLocation(dynamicShaderProgram, nonConstantUniform.getName());
-            nonConstantUniform.bind(id);
+            nonConstantUniform.bind(dynamicShaderProgram);
         }
 
         second.bindToFramebufferForWriting(fboInUse);

@@ -1,5 +1,6 @@
 package github.com.rev;
 
+import github.com.rev.gl.uniform.UniformArray;
 import github.com.rev.gl.uniform.UniformPrimative;
 import github.com.rev.terminal.Terminal;
 import org.lwjgl.opengl.GL43;
@@ -122,13 +123,37 @@ public class Main
         // for stability, we require mu = deltaT / deltaX ^ 2 < 1/4
         float deltaX = 0.01f;
         float deltaT = 0.245f * deltaX * deltaX;
+        float mu = deltaT / (deltaX * deltaX);
+
+        Float[][] offsets = new Float[][] {
+                new Float[] {-deltaX, deltaX},
+                new Float[] {0.0f, deltaX},
+                new Float[] {deltaX, deltaX},
+                new Float[] {-deltaX, 0.0f},
+                new Float[] {0.0f, 0.0f},
+                new Float[] {deltaX, 0.0f},
+                new Float[] {-deltaX, -deltaX},
+                new Float[] {0.0f, -deltaX},
+                new Float[] {deltaX, -deltaX}
+        };
+
+        Float[] kernel = new Float[] {
+                mu / 6, 2 * mu / 3, mu / 6,
+                2 * mu / 3, -10 / 3f * mu, 2 * mu / 3,
+                mu / 6, 2 * mu / 3, mu / 6
+        };
+
         final DynamicV2 wave = new DynamicV2(
                 "Wave Equation",
                 "dynamic/implV2/wave_bootstrap.frag",
                 "dynamic/implV2/wave_dynamic.frag",
                 "dynamic/implV2/wave_render.frag",
-                Set.of(new UniformPrimative("deltaX", true, id -> GL43.glUniform1f(id, deltaX)),
-                        new UniformPrimative("deltaT", true, id -> GL43.glUniform1f(id, deltaT))),
+                Set.of(
+                        new UniformPrimative("deltaX", true, id -> GL43.glUniform1f(id, deltaX)),
+                        new UniformPrimative("deltaT", true, id -> GL43.glUniform1f(id, deltaT)),
+                        new UniformArray<>("offsets", true, (f, id) -> GL43.glUniform2f(id, f[0], f[1]), offsets),
+                        new UniformArray<>("kernel", true, (f, id) -> GL43.glUniform1f(id, f), kernel)
+                ),
                 new int[]{GL43.GL_COLOR_ATTACHMENT0, GL43.GL_COLOR_ATTACHMENT1},
                 new String[]{"inputPosition", "inputVelocity"}
         );

@@ -1,5 +1,7 @@
 package github.com.rev.gl.uniform;
 
+import org.lwjgl.opengl.GL43;
+
 import java.util.function.Consumer;
 
 public class UniformPrimative extends Uniform {
@@ -12,7 +14,8 @@ public class UniformPrimative extends Uniform {
     }
 
     @Override
-    public void bind(int id) {
+    public void bind(int shaderProgram) {
+        final int id = GL43.glGetUniformLocation(shaderProgram, getName());
         setter.accept(id);
     }
 }

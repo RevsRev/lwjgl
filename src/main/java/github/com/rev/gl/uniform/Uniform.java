@@ -13,5 +13,5 @@ public abstract class Uniform {
         this.constant = constant;
     }
 
-    public abstract void bind(final int id);
+    public abstract void bind(final int shaderProgram);
 }
