@@ -1,6 +1,8 @@
 package github.com.rev;
 
 import github.com.rev.util.ShaderUtils;
+import lombok.Getter;
+import lombok.Setter;
 import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -14,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
@@ -34,13 +37,24 @@ public final class Fractal extends WindowedProgram
     //View settings
     private double previousCoordMouseX = 0.0f;
     private double previousCoordMouseY = 0.0f;
+    @Setter
     private double coordOriginX = 0.0f;
+    @Setter
     private double coordOriginY = 0.0f;
+    @Setter
     private double coordXWidth = 2.0f;
+    @Setter
     private double coordYWidth = 2.0f;
 
+    @Getter
     private double coordMouseClickX;
+    @Getter
     private double coordMouseClickY;
+
+    @Setter
+    private Color backgroundColor = new Color(10, 3, 61, 255);
+    @Setter
+    private Color setColor = new Color(69, 103, 179, 255);
 
     private final float ZOOM_SENSITIVITY = 0.1f;
     private double coordMouseX;
@@ -53,6 +67,7 @@ public final class Fractal extends WindowedProgram
     //Iterations
     private double globalZoom = 1.0;
     private int maxIterations = 50;
+    private final Function<Double, Integer> iterationsFunc;
 
     private final String fractalFragmentShaderResourcePath;
 
@@ -96,9 +111,17 @@ public final class Fractal extends WindowedProgram
     public Fractal(final String title,
                    final String fractalFragmentShaderResourcePath,
                    final Map<String, Supplier<Double>> dynamicShaderProgramUniformFloats) {
+        this(title, fractalFragmentShaderResourcePath, dynamicShaderProgramUniformFloats, zoom -> Math.max(50, (int)(50 * Math.pow(zoom, 0.1))));
+    }
+    public Fractal(final String title,
+                   final String fractalFragmentShaderResourcePath,
+                   final Map<String, Supplier<Double>> dynamicShaderProgramUniformFloats,
+                   final Function<Double, Integer> iterationsFunc) {
         super(title);
         this.fractalFragmentShaderResourcePath = fractalFragmentShaderResourcePath;
         this.dynamicShaderProgramUniformFloats = dynamicShaderProgramUniformFloats;
+        this.iterationsFunc = iterationsFunc;
+        maxIterations = iterationsFunc.apply(globalZoom);
     }
 
     @Override
@@ -149,10 +172,7 @@ public final class Fractal extends WindowedProgram
         int backgroundColorShaderLocation = GL43.glGetUniformLocation(fractalShaderProgram, "backgroundColor");
         int setColorShaderLocation = GL43.glGetUniformLocation(fractalShaderProgram, "setColor");
 
-        Color backgroundColor = new Color(10, 3, 61, 255);
         float[] backgroundColorRGB = backgroundColor.getRGBColorComponents(new float[3]);
-
-        Color setColor = new Color(69, 103, 179, 255);
         float[] setColorRGB = setColor.getRGBColorComponents(new float[3]);
 
         GL43.glUniform4f(backgroundColorShaderLocation,
@@ -336,7 +356,7 @@ public final class Fractal extends WindowedProgram
             coordXWidth *= 1/zoom;
             coordYWidth *= 1/zoom;
 
-            maxIterations = Math.max(50, (int)(50 * Math.pow(globalZoom, 0.1)));
+            maxIterations = iterationsFunc.apply(globalZoom);
 //            System.out.printf("Magnification: %s%n", Math.log10(globalZoom));
         };
     }
@@ -359,10 +379,4 @@ public final class Fractal extends WindowedProgram
         };
     }
 
-    public double getCoordMouseClickX() {
-        return coordMouseClickX;
-    }
-    public double getCoordMouseClickY() {
-        return coordMouseClickY;
-    }
 }

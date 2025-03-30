@@ -5,6 +5,8 @@ import github.com.rev.gl.uniform.UniformPrimative;
 import github.com.rev.terminal.Terminal;
 import org.lwjgl.opengl.GL43;
 
+import java.awt.Color;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -17,6 +19,7 @@ public class Main
         Terminal t = new Terminal();
 
         addMandelbrotJulia(t);
+        addSierpinski(t);
         addDiffusionV1Options(t);
         addDiffusionV2(t);
         addWave(t);
@@ -36,6 +39,21 @@ public class Main
                 )
         );
         t.addOption("mandelbrot", Set.of(mandlebrot, julia));
+    }
+
+    private static void addSierpinski(final Terminal t) {
+        final Fractal sierpinskiCarpet = new Fractal(
+                "Sierpinski Carpet",
+                "fractal/impl/sierpinski_carpet.frag",
+                Collections.emptyMap(),
+                zoom -> Math.max(9, (int)(9 + Math.log(zoom) * Math.log(3))));
+        sierpinskiCarpet.setCoordOriginX(0.5);
+        sierpinskiCarpet.setCoordOriginY(0.5);
+        sierpinskiCarpet.setCoordXWidth(0.5);
+        sierpinskiCarpet.setCoordYWidth(0.5);
+        sierpinskiCarpet.setBackgroundColor(Color.WHITE);
+        sierpinskiCarpet.setSetColor(Color.BLACK);
+        t.addOption("sierpinski", Set.of(sierpinskiCarpet));
     }
 
     private static void addDiffusionV1Options(final Terminal t) {
