@@ -52,9 +52,11 @@ public final class Fractal extends WindowedProgram
     private double coordMouseClickY;
 
     @Setter
-    private Color backgroundColor = new Color(10, 3, 61, 255);
+    private Color backgroundColor = new Color(228, 7, 47, 255);
     @Setter
-    private Color setColor = new Color(69, 103, 179, 255);
+    private Color intermediateColor = new Color(220, 156, 61, 255);
+    @Setter
+    private Color setColor = new Color(12, 45, 124, 255);
 
     private final float ZOOM_SENSITIVITY = 0.1f;
     private double coordMouseX;
@@ -170,15 +172,22 @@ public final class Fractal extends WindowedProgram
         }
 
         int backgroundColorShaderLocation = GL43.glGetUniformLocation(fractalShaderProgram, "backgroundColor");
+        int intermediateColorShaderLocation = GL43.glGetUniformLocation(fractalShaderProgram, "intermediateColor");
         int setColorShaderLocation = GL43.glGetUniformLocation(fractalShaderProgram, "setColor");
 
         float[] backgroundColorRGB = backgroundColor.getRGBColorComponents(new float[3]);
+        float[] intermediateColorRGB = intermediateColor.getRGBColorComponents(new float[3]);
         float[] setColorRGB = setColor.getRGBColorComponents(new float[3]);
 
         GL43.glUniform4f(backgroundColorShaderLocation,
                 backgroundColorRGB[0],
                 backgroundColorRGB[1],
                 backgroundColorRGB[2],
+                1.0f);
+        GL43.glUniform4f(intermediateColorShaderLocation,
+                intermediateColorRGB[0],
+                intermediateColorRGB[1],
+                intermediateColorRGB[2],
                 1.0f);
         GL43.glUniform4f(setColorShaderLocation,
                 setColorRGB[0],

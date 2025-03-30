@@ -4,10 +4,15 @@ in vec4 vertexPosition; // input variable from vs (same name and type)
 
 uniform dvec4 coordInfo;
 uniform vec4 backgroundColor;
+uniform vec4 intermediateColor;
 uniform vec4 setColor;
 uniform int maxIterations;
 
 out vec4 FragColor;
+
+vec4 mixColors(vec4 first, vec4 second, float ratio) {
+    return first + ratio * (second - first);
+}
 
 void main()
 {
@@ -32,11 +37,11 @@ void main()
         i++;
     }
 
-    float ratio = i * (1.0 / maxIterations);
-    float r = backgroundColor.r + (setColor.r - backgroundColor.r) * ratio;
-    float g = backgroundColor.g + (setColor.g - backgroundColor.g) * ratio;
-    float b = backgroundColor.b + (setColor.b - backgroundColor.b) * ratio;
-    float a = backgroundColor.a + (setColor.a - backgroundColor.a) * ratio;
+    float ratio = 1 - i * (1.0 / maxIterations);
 
-    FragColor = vec4(r, g, b, a);
+    if (ratio < 0.5) {
+        FragColor = mixColors(setColor, intermediateColor, ratio / 0.5);
+        return;
+    }
+    FragColor = mixColors(intermediateColor, backgroundColor, (ratio - 0.5) / 0.5);
 }

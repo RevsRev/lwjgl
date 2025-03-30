@@ -77,7 +77,7 @@ public class Main
         final Fractal burningShip = new Fractal(
                 "Burning Ship",
                 "fractal/impl/burning_ship.frag");
-        t.addOption("burning_ship", Set.of(burningShip));
+        t.addOption("burningship", Set.of(burningShip));
     }
 
     private static void addDiffusionV1Options(final Terminal t) {
