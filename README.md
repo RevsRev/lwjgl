@@ -13,3 +13,7 @@ A playground for all things LWJGL.
 ![](image/julia1.png)
 ![](image/julia2.png)
 ![](image/julia3.png)
+
+# Diffusion equation
+
+![](image/diffusion.png)
