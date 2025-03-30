@@ -21,6 +21,7 @@ public class Main
         addMandelbrotJulia(t);
         addSierpinski(t);
         addSierpinskiTriangle(t);
+        addBurningShip(t);
         addDiffusionV1Options(t);
         addDiffusionV2(t);
         addWave(t);
@@ -70,6 +71,13 @@ public class Main
         sierpinskiCarpet.setBackgroundColor(Color.WHITE);
         sierpinskiCarpet.setSetColor(Color.BLACK);
         t.addOption("sierpinskiT", Set.of(sierpinskiCarpet));
+    }
+
+    private static void addBurningShip(final Terminal t) {
+        final Fractal burningShip = new Fractal(
+                "Burning Ship",
+                "fractal/impl/burning_ship.frag");
+        t.addOption("burning_ship", Set.of(burningShip));
     }
 
     private static void addDiffusionV1Options(final Terminal t) {
