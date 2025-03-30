@@ -9,6 +9,9 @@ uniform int maxIterations;
 
 out vec4 FragColor;
 
+const double sin60 = sqrt(3.0)/2.0;
+const double root3 = sqrt(3.0);
+
 void main()
 {
     double originX = coordInfo.x;
@@ -16,29 +19,32 @@ void main()
     double xWidth = coordInfo.z;
     double yWidth = coordInfo.w;
 
-    double x = double((vertexPosition.x * xWidth) + originX);
-    double y = double((vertexPosition.y * yWidth) + originY);
+    double xOrthog = double((vertexPosition.x * xWidth) + originX);
+    double yOrthog = double((vertexPosition.y * yWidth) + originY);
 
-    if (x < 0 || x > 1 || y < 0 || y > 1) {
+    double x = xOrthog - yOrthog / root3;
+    double y = yOrthog / sin60;
+
+    if (x < 0 || y < 0 || x + y > 1) {
         FragColor = backgroundColor;
         return;
     }
 
     int i = 0;
     while (i < maxIterations) {
-        int xB3 = int(3*x);
-        int yB3 = int(3*y);
+        int xB2 = int(2*x);
+        int yB2 = int(2*y);
 
-        if (xB3 == 1 && yB3 == 1) {
+        if (xB2 == 1 && yB2 == 1) {
             break;
         }
 
-        x = 3 * x - xB3;
-        y = 3 * y - yB3;
+        x = 2 * x - xB2;
+        y = 2 * y - yB2;
         i++;
     }
 
-    //    float ratio = i * (1.0 / maxIterations);
+//    float ratio = i * (1.0 / maxIterations);
 
     float ratio = 0.0;
     if (i == maxIterations) {

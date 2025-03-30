@@ -20,6 +20,7 @@ public class Main
 
         addMandelbrotJulia(t);
         addSierpinski(t);
+        addSierpinskiTriangle(t);
         addDiffusionV1Options(t);
         addDiffusionV2(t);
         addWave(t);
@@ -46,7 +47,7 @@ public class Main
                 "Sierpinski Carpet",
                 "fractal/impl/sierpinski_carpet.frag",
                 Collections.emptyMap(),
-                zoom -> Math.max(9, (int)(9 + Math.log(zoom) * Math.log(3))));
+                zoom -> Math.max(6, (int)(6 + Math.log(zoom) / Math.log(3))));
         sierpinskiCarpet.setCoordOriginX(0.5);
         sierpinskiCarpet.setCoordOriginY(0.5);
         sierpinskiCarpet.setCoordXWidth(0.5);
@@ -54,6 +55,21 @@ public class Main
         sierpinskiCarpet.setBackgroundColor(Color.WHITE);
         sierpinskiCarpet.setSetColor(Color.BLACK);
         t.addOption("sierpinski", Set.of(sierpinskiCarpet));
+    }
+
+    private static void addSierpinskiTriangle(final Terminal t) {
+        final Fractal sierpinskiCarpet = new Fractal(
+                "Sierpinski Triangle",
+                "fractal/impl/sierpinski_triangle.frag",
+                Collections.emptyMap(),
+                zoom -> Math.max(9, (int)(9 + Math.log(zoom) / Math.log(2))));
+        sierpinskiCarpet.setCoordOriginX(0.5);
+        sierpinskiCarpet.setCoordOriginY(0.5);
+        sierpinskiCarpet.setCoordXWidth(0.5);
+        sierpinskiCarpet.setCoordYWidth(0.5);
+        sierpinskiCarpet.setBackgroundColor(Color.WHITE);
+        sierpinskiCarpet.setSetColor(Color.BLACK);
+        t.addOption("sierpinskiT", Set.of(sierpinskiCarpet));
     }
 
     private static void addDiffusionV1Options(final Terminal t) {
