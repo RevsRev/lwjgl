@@ -1,4 +1,4 @@
-package github.com.rev.math;
+package github.com.rev.gl.math;
 
 public final class Metrics {
 

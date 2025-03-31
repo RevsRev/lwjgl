@@ -1,21 +1,24 @@
-package github.com.rev.math;
+package github.com.rev.gl.math;
 
-public final class Mat3f {
+public final class Mat4f {
 
-    private static final int SIZE = 3;
+    private static final int SIZE = 4;
     final float[][] elements;
 
-    public Mat3f(float a00, float a01, float a02,
-                 float a10, float a11, float a12,
-                 float a20, float a21, float a22) {
+    public Mat4f(float a00, float a01, float a02, float a03,
+                 float a10, float a11, float a12, float a13,
+                 float a20, float a21, float a22, float a23,
+                 float a30, float a31, float a32, float a33
+    ) {
         this(new float[][]{
-                {a00, a01, a02},
-                {a10, a11, a12},
-                {a20, a21, a22}
+                {a00, a01, a02, a03},
+                {a10, a11, a12, a13},
+                {a20, a21, a22, a23},
+                {a30, a31, a32, a33}
         });
     }
 
-    Mat3f(float[][] elements) {
+    Mat4f(float[][] elements) {
         this.elements = elements;
     }
 
@@ -30,7 +33,7 @@ public final class Mat3f {
         return new Vec3f(result);
     }
 
-    public Mat3f mult(Mat3f other) {
+    public Mat4f mult(Mat4f other) {
         float[][] result = new float[SIZE][SIZE];
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
@@ -40,7 +43,7 @@ public final class Mat3f {
                 }
             }
         }
-        return new Mat3f(result);
+        return new Mat4f(result);
     }
 
 }
