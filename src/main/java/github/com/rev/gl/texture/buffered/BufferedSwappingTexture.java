@@ -1,16 +1,16 @@
-package github.com.rev.gl.texture;
+package github.com.rev.gl.texture.buffered;
 
 import lombok.Getter;
 
-public class SwappingTexture implements TextureOperations {
+public class BufferedSwappingTexture implements BufferedTexture {
 
-    private final Textures first;
-    private final Textures second;
+    private final BufferedTextures first;
+    private final BufferedTextures second;
 
     @Getter
     private boolean swap = false;
 
-    public SwappingTexture(Textures first, Textures second) {
+    public BufferedSwappingTexture(BufferedTextures first, BufferedTextures second) {
         this.first = first;
         this.second = second;
     }

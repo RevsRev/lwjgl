@@ -1,16 +1,15 @@
-package github.com.rev.gl.texture;
+package github.com.rev.gl.texture.buffered;
 
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public final class Textures implements TextureOperations {
+public final class BufferedTextures implements BufferedTexture {
 
-    private final Collection<Texture> textures;
+    private final Collection<BufferedTexture> textures;
     int[] layers = null;
 
-    public Textures(Collection<Texture> textures) {
+    public BufferedTextures(Collection<BufferedTexture> textures) {
         this.textures = textures;
     }
 
@@ -21,13 +20,13 @@ public final class Textures implements TextureOperations {
 
     @Override
     public void bindForReading() {
-        textures.forEach(Texture::bindForReading);
+        textures.forEach(BufferedTexture::bindForReading);
     }
 
     @Override
     public int[] bindForWriting() {
         if (layers != null) {
-            textures.forEach(Texture::bindForWriting);
+            textures.forEach(BufferedTexture::bindForWriting);
             return layers;
         }
 

@@ -1,5 +1,6 @@
 package github.com.rev;
 
+import github.com.rev.gl.scene.Scene;
 import github.com.rev.gl.uniform.UniformArray;
 import github.com.rev.gl.uniform.UniformPrimative;
 import github.com.rev.terminal.Terminal;
@@ -25,6 +26,7 @@ public class Main
         addDiffusionV1Options(t);
         addDiffusionV2(t);
         addWave(t);
+        addScene(t);
 
         t.start();
 
@@ -200,6 +202,11 @@ public class Main
                 new String[]{"inputPosition", "inputVelocity"}
         );
         t.addOption("wave", Set.of(wave));
+    }
+
+    private static void addScene(final Terminal t) {
+        Scene scene = new Scene("Scene");
+        t.addOption("scene", Set.of(scene));
     }
 
 }

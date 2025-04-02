@@ -1,8 +1,9 @@
 package github.com.rev;
 
-import github.com.rev.gl.texture.SwappingTexture;
-import github.com.rev.gl.texture.Texture;
-import github.com.rev.gl.texture.Textures;
+import github.com.rev.gl.texture.buffered.BufferedSwappingTexture;
+import github.com.rev.gl.texture.buffered.BufferedTexture;
+import github.com.rev.gl.texture.buffered.BufferedTextureImpl;
+import github.com.rev.gl.texture.buffered.BufferedTextures;
 import github.com.rev.gl.uniform.Uniform;
 import github.com.rev.util.ShaderUtils;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
@@ -68,7 +69,7 @@ public final class DynamicV2 extends WindowedProgram
 
     //Textures & Layers
     private final String[] layerUniformNames;
-    private final SwappingTexture swappingTexture;
+    private final BufferedSwappingTexture bufferedSwappingTexture;
 
     public DynamicV2(String title, String bootstrapFragmentShaderResource, String dynamicFragmentShaderResource,
                      String renderFramentShaderResource, Collection<Uniform> uniforms, String[] layerUniformNames) {
@@ -78,15 +79,15 @@ public final class DynamicV2 extends WindowedProgram
         this.renderFramentShaderResource = renderFramentShaderResource;
         this.layerUniformNames = layerUniformNames;
 
-        List<Texture> primary = new ArrayList<>();
-        List<Texture> secondary = new ArrayList<>();
+        List<BufferedTexture> primary = new ArrayList<>();
+        List<BufferedTexture> secondary = new ArrayList<>();
         for (int i = 0; i < layerUniformNames.length; i++) {
-            Texture tPrimary = new Texture(i);
-            Texture tSecondary = new Texture(i);
+            BufferedTexture tPrimary = new BufferedTextureImpl(i);
+            BufferedTexture tSecondary = new BufferedTextureImpl(i);
             primary.add(tPrimary);
             secondary.add(tSecondary);
         }
-        this.swappingTexture = new SwappingTexture(new Textures(primary), new Textures(secondary));
+        this.bufferedSwappingTexture = new BufferedSwappingTexture(new BufferedTextures(primary), new BufferedTextures(secondary));
 
         this.dynamicConstantUniforms = uniforms.stream().filter(Uniform::isConstant).collect(Collectors.toSet());
         this.dynamicNonConstantUniforms = uniforms.stream().filter(u -> !u.isConstant()).collect(Collectors.toSet());
@@ -97,7 +98,7 @@ public final class DynamicV2 extends WindowedProgram
         GL.createCapabilities();
         GL43.glViewport(0, 0, width, height);
 
-        swappingTexture.init(width, height);
+        bufferedSwappingTexture.init(width, height);
 
         fbo = GL43.glGenFramebuffers();
         rbo = GL43.glGenRenderbuffers();
@@ -195,7 +196,7 @@ public final class DynamicV2 extends WindowedProgram
             return;
         }
 
-        int fboInUse = swappingTexture.isSwap() ? fboTwo : fbo;
+        int fboInUse = bufferedSwappingTexture.isSwap() ? fboTwo : fbo;
 
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fboInUse);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
@@ -205,8 +206,8 @@ public final class DynamicV2 extends WindowedProgram
             nonConstantUniform.bind(dynamicShaderProgram);
         }
 
-        GL43.glDrawBuffers(swappingTexture.bindForWriting());
-        swappingTexture.bindForReading();
+        GL43.glDrawBuffers(bufferedSwappingTexture.bindForWriting());
+        bufferedSwappingTexture.bindForReading();
 
         GL43.glBindVertexArray(dynamicVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
@@ -214,12 +215,12 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(renderShaderProgram);
-        swappingTexture.bindForReading();
+        bufferedSwappingTexture.bindForReading();
 
         GL43.glBindVertexArray(renderVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
 
-        swappingTexture.swap();
+        bufferedSwappingTexture.swap();
     }
 
     @Override
@@ -263,22 +264,22 @@ public final class DynamicV2 extends WindowedProgram
 
         setupFramebuffer(fbo, rbo);
         setupFramebuffer(fboTwo, rboTwo);
-        swappingTexture.resize(width, height);
+        bufferedSwappingTexture.resize(width, height);
 
         doBootstrap();
     }
 
     private void doBootstrap() {
-        int bootstrapFbo = swappingTexture.isSwap() ? fboTwo : fbo;
+        int bootstrapFbo = bufferedSwappingTexture.isSwap() ? fboTwo : fbo;
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, bootstrapFbo);
-        GL43.glDrawBuffers(swappingTexture.bindForWriting());
+        GL43.glDrawBuffers(bufferedSwappingTexture.bindForWriting());
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
 
         GL43.glUseProgram(bootstrapShaderProgram);
         GL43.glBindVertexArray(bootstrapVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0 , 6);
 
-        swappingTexture.swap();
+        bufferedSwappingTexture.swap();
     }
 
 }
