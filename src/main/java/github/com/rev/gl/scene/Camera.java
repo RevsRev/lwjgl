@@ -1,7 +1,7 @@
 package github.com.rev.gl.scene;
 
 import github.com.rev.gl.math.Mat4f;
-import github.com.rev.gl.math.Util;
+import github.com.rev.gl.math.Transform;
 import github.com.rev.gl.math.Vec3f;
 
 public final class Camera {
@@ -13,5 +13,5 @@ public final class Camera {
     final Vec3f direction = position.minus(position).normalise();
     final Vec3f right = WORLD_UP.cross(direction).normalise();
     final Vec3f up = direction.cross(right).normalise();
-    final Mat4f view = Util.lookAt(position, target, right);
+    final Mat4f view = Transform.lookAt(position, target, right);
 }

@@ -24,12 +24,12 @@ public class Vec3f {
         );
     }
 
-    public float magnitude() {
+    public float norm() {
         return Metrics.euclidian(elements);
     }
 
     public Vec3f normalise() {
-        float magnitude = magnitude();
+        float magnitude = norm();
         return new Vec3f(
                 elements[0] / magnitude,
                 elements[1] / magnitude,
@@ -59,5 +59,12 @@ public class Vec3f {
                 - elements[0] * other.elements[2] + elements[2] * other.elements[0],
                 elements[0] * other.elements[1] - elements[1] * other.elements[0]
         );
+    }
+
+    public float dot(final Vec3f other) {
+        return
+                elements[0] * other.elements[0] +
+                elements[1] * other.elements[1] +
+                elements[2] * other.elements[2];
     }
 }

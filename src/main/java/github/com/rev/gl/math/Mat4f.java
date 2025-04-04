@@ -5,6 +5,13 @@ public final class Mat4f {
     private static final int SIZE = 4;
     final float[][] elements;
 
+    public static final Mat4f IDENTITY = new Mat4f(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+    );
+
     public Mat4f(float a00, float a01, float a02, float a03,
                  float a10, float a11, float a12, float a13,
                  float a20, float a21, float a22, float a23,
@@ -46,4 +53,11 @@ public final class Mat4f {
         return new Mat4f(result);
     }
 
+    public float[] asFloatArr() {
+        float[] fArr = new float[SIZE * SIZE];
+        for (int i = 0; i < SIZE; i++) {
+            System.arraycopy(elements[i], 0, fArr, 4 * i, SIZE);
+        }
+        return fArr;
+    }
 }

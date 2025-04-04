@@ -48,6 +48,7 @@ public class ShaderProgram {
             throw new RuntimeException(message);
         }
         GL43.glUseProgram(programId);
+        loadUniforms(nonConstantUniforms);
     }
 
     public void init() {
@@ -74,6 +75,7 @@ public class ShaderProgram {
     }
 
     private void loadUniforms(final Collection<Uniform> uniforms) {
+        GL43.glUseProgram(programId);
         uniforms.forEach(u -> u.bind(programId));
     }
 
