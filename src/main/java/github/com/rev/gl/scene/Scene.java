@@ -2,9 +2,14 @@ package github.com.rev.gl.scene;
 
 import github.com.rev.WindowedProgram;
 import github.com.rev.gl.math.Mat4f;
+import github.com.rev.gl.scene.light.DirectionalLight;
+import github.com.rev.gl.scene.light.PointLight;
+import github.com.rev.gl.scene.light.SpotLight;
 import github.com.rev.gl.shader.ShaderProgram;
 import github.com.rev.gl.texture.image.ImageTexture;
+import github.com.rev.gl.uniform.UniformArray;
 import github.com.rev.gl.uniform.UniformPrimative;
+import github.com.rev.gl.uniform.UniformStructArray;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL43;
@@ -12,6 +17,9 @@ import org.lwjgl.stb.STBImage;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static org.lwjgl.opengl.GL.createCapabilities;
 import static org.lwjgl.opengl.GL43.glBindFramebuffer;
@@ -34,42 +42,42 @@ public final class Scene extends WindowedProgram {
     };
 
     private static final float[] CUBE_VERTICES = {
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-            -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+            0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+            0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+            0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+            0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+            0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+            -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+            -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+            -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+            0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+            0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+            0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+            0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+            0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
     };
 
     private int vao;
@@ -80,6 +88,11 @@ public final class Scene extends WindowedProgram {
 
     private Matrix4f transform;
     private UniformPrimative transformUniform;
+
+    private final List<DirectionalLight> directionalLights = new ArrayList<>();
+    private final List<PointLight> pointLights = new ArrayList<>();
+    private final List<SpotLight> spotLights = new ArrayList<>();
+    private UniformStructArray<PointLight> pointLightsUniform;
 
     public Scene(String title) {
         super(title);
@@ -100,38 +113,20 @@ public final class Scene extends WindowedProgram {
         vbo = GL43.glGenBuffers();
         ebo = GL43.glGenBuffers();
 
-
-        //SQUARE
-//        GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, vbo);
-//        GL43.glBufferData(GL43.GL_ARRAY_BUFFER, SQUARE_VERTICES, GL43.GL_STATIC_DRAW);
-//
-//        GL43.glBindBuffer(GL43.GL_ELEMENT_ARRAY_BUFFER, ebo);
-//        GL43.glBufferData(GL43.GL_ELEMENT_ARRAY_BUFFER, INDICES, GL43.GL_STATIC_DRAW);
-//
-//        GL43.glEnableVertexAttribArray(0);
-//        GL43.glVertexAttribPointer(0, 3, GL43.GL_FLOAT, false, 8 * 4, 0);
-//        GL43.glEnableVertexAttribArray(1);
-//        GL43.glVertexAttribPointer(1, 3, GL43.GL_FLOAT, false, 8 * 4, 3 * 4);
-//        GL43.glEnableVertexAttribArray(2);
-//        GL43.glVertexAttribPointer(2, 2, GL43.GL_FLOAT, false, 8 * 4, 6 * 4);
-
-//        GL43.glBindBuffer(GL43.GL_ELEMENT_ARRAY_BUFFER, ebo);
-//        GL43.glBufferData(GL43.GL_ELEMENT_ARRAY_BUFFER, INDICES, GL43.GL_STATIC_DRAW);
-
         //CUBE
         GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, vbo);
         GL43.glBufferData(GL43.GL_ARRAY_BUFFER, CUBE_VERTICES, GL43.GL_STATIC_DRAW);
 
-
         GL43.glEnableVertexAttribArray(0);
-        GL43.glVertexAttribPointer(0, 3, GL43.GL_FLOAT, false, 5 * 4, 0);
+        GL43.glVertexAttribPointer(0, 3, GL43.GL_FLOAT, false, 8 * 4, 0);
         GL43.glEnableVertexAttribArray(1);
-        GL43.glVertexAttribPointer(1, 2, GL43.GL_FLOAT, false, 5 * 4, 3 * 4);
+        GL43.glVertexAttribPointer(1, 3, GL43.GL_FLOAT, false, 8 * 4, 3 * 4);
+        GL43.glEnableVertexAttribArray(2);
+        GL43.glVertexAttribPointer(2, 2, GL43.GL_FLOAT, false, 8 * 4, 6 * 4);
 
         shader = new ShaderProgram("scene/shaders/vertex/scene.vert", "scene/shaders/fragment/scene.frag");
 
         String texturePath = new File("src/main/resources/scene/textures/container.jpg").getAbsolutePath();
-
         ByteBuffer byteBuffer =
                 STBImage.stbi_load(texturePath, new int[] {512}, new int[] {512}, new int[] {3}, 0);
 
@@ -140,12 +135,21 @@ public final class Scene extends WindowedProgram {
         texture.bindForReading();
 
         transform = new Matrix4f();
-        float[] floats = transform.get(new float[16]);
         transformUniform =
                 new UniformPrimative("transform", false, id -> GL43.glUniformMatrix4fv(id, false, transform.get(new float[16])));
-        shader.addUniform(transformUniform);
-        shader.init();
 
+        PointLight pointLight = new PointLight();
+        pointLights.add(pointLight);
+
+        pointLightsUniform = new UniformStructArray<>(
+                "pointLights",
+                true,
+                PointLight.structUniforms(),
+                pointLights.toArray(new PointLight[0]));
+
+        shader.addUniform(transformUniform);
+//        shader.addUniform(pointLightsUniform);
+        shader.init();
     }
 
     @Override
