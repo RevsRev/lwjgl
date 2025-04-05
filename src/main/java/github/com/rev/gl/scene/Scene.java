@@ -1,17 +1,17 @@
 package github.com.rev.gl.scene;
 
 import github.com.rev.WindowedProgram;
-import github.com.rev.gl.math.Mat4f;
 import github.com.rev.gl.scene.light.DirectionalLight;
 import github.com.rev.gl.scene.light.PointLight;
 import github.com.rev.gl.scene.light.SpotLight;
 import github.com.rev.gl.shader.ShaderProgram;
 import github.com.rev.gl.texture.image.ImageTexture;
-import github.com.rev.gl.uniform.UniformArray;
 import github.com.rev.gl.uniform.UniformPrimative;
 import github.com.rev.gl.uniform.UniformStructArray;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFWCursorPosCallbackI;
+import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.stb.STBImage;
 
@@ -19,8 +19,12 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_DISABLED;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.opengl.GL.createCapabilities;
 import static org.lwjgl.opengl.GL43.glBindFramebuffer;
 import static org.lwjgl.opengl.GL43.glBindVertexArray;
@@ -86,13 +90,19 @@ public final class Scene extends WindowedProgram {
     private ShaderProgram shader;
     private ImageTexture texture;
 
-    private Matrix4f transform;
-    private UniformPrimative transformUniform;
+    private Matrix4f model;
+    private UniformPrimative uniformModel;
 
     private final List<DirectionalLight> directionalLights = new ArrayList<>();
     private final List<PointLight> pointLights = new ArrayList<>();
     private final List<SpotLight> spotLights = new ArrayList<>();
     private UniformStructArray<PointLight> pointLightsUniform;
+    private UniformPrimative uniformView;
+    private UniformPrimative uniformProjection;
+
+    private final Camera camera = new Camera();
+    private final CameraController cameraController = new CameraController(camera);
+    private UniformStructArray<DirectionalLight> directionalLightsUniform;
 
     public Scene(String title) {
         super(title);
@@ -134,12 +144,21 @@ public final class Scene extends WindowedProgram {
         texture.init();
         texture.bindForReading();
 
-        transform = new Matrix4f();
-        transformUniform =
-                new UniformPrimative("transform", false, id -> GL43.glUniformMatrix4fv(id, false, transform.get(new float[16])));
+        model = new Matrix4f();
+        uniformModel =
+                new UniformPrimative("model", false, id -> GL43.glUniformMatrix4fv(id, false, model.get(new float[16])));
+
+        uniformView =
+                new UniformPrimative("view", false, id -> GL43.glUniformMatrix4fv(id, false, camera.view.get(new float[16])));
+
+        uniformProjection =
+                new UniformPrimative("projection", false, id -> GL43.glUniformMatrix4fv(id, false, camera.perspective.get(new float[16])));
 
         PointLight pointLight = new PointLight();
         pointLights.add(pointLight);
+
+        DirectionalLight directionalLight = new DirectionalLight();
+        directionalLights.add(directionalLight);
 
         pointLightsUniform = new UniformStructArray<>(
                 "pointLights",
@@ -147,28 +166,70 @@ public final class Scene extends WindowedProgram {
                 PointLight.structUniforms(),
                 pointLights.toArray(new PointLight[0]));
 
-        shader.addUniform(transformUniform);
-//        shader.addUniform(pointLightsUniform);
+        directionalLightsUniform = new UniformStructArray<>(
+                "dirLights",
+                true,
+                DirectionalLight.structUniforms(),
+                directionalLights.toArray(new DirectionalLight[0]));
+
+        shader.addUniform(uniformModel);
+        shader.addUniform(uniformView);
+        shader.addUniform(uniformProjection);
+        shader.addUniform(pointLightsUniform);
+        shader.addUniform(directionalLightsUniform);
         shader.init();
     }
 
     @Override
     public void run() {
+
+        long frameStart = System.nanoTime();
+
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
         GL43.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
 
-        transform.rotate(0.01f, new Vector3f(1,1,1));
+        model.rotate(0.01f, new Vector3f(1,1,1));
         shader.use();
         GL43.glBindVertexArray(vao);
         texture.bindForReading();
 
 //        GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 36);
+
+        long frameTime = System.nanoTime() - frameStart;
+        double dT = (double)(frameTime) / 1000000.0d;
+        cameraController.process(dT);
     }
 
     @Override
     public void setupCallbacks(long window) {
+        glfwSetKeyCallback(window, getGlfwKeyCallback());
+        glfwSetCursorPosCallback(window, getCursorPosCallback());
+    }
 
+    @Override
+    public int getCursorMode() {
+        return GLFW_CURSOR_DISABLED;
+    }
+
+    private GLFWKeyCallback getGlfwKeyCallback() {
+        return new GLFWKeyCallback() {
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+
+                if (key == GLFW_KEY_ESCAPE) {
+                    glfwSetWindowShouldClose(window, true);
+                    return;
+                }
+                cameraController.handleKey(key, scancode, action, mods);
+            }
+        };
+    }
+
+    private GLFWCursorPosCallbackI getCursorPosCallback() {
+        return (window, xpos, ypos) ->
+        {
+            cameraController.handleMouse(xpos, ypos);
+        };
     }
 }

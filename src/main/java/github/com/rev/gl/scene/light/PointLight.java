@@ -11,10 +11,10 @@ import java.util.function.BiConsumer;
 @Getter
 @Setter
 public class PointLight extends Light {
-    private Vector3f position;
-    private float constant;
-    private float linear;
-    private float quadratic;
+    private Vector3f position = new Vector3f(0.0f, 0.0f, 0.0f);
+    private float constant = 1.0f;
+    private float linear = 1.0f;
+    private float quadratic = 1.0f;
 
     public static Map<String, BiConsumer<PointLight, Integer>> structUniforms() {
         return Map.of(

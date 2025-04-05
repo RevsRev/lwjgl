@@ -54,7 +54,7 @@ public final class GlfwManager {
             glfwTerminate();
         }
 
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR);
+        glfwSetInputMode(window, GLFW_CURSOR, program.getCursorMode());
         program.setupCallbacks(window);
         programs.put(program, window);
     }
