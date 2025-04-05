@@ -69,7 +69,7 @@ public final class CameraController {
         lastMouseX = xpos;
         lastMouseY = ypos;
 
-        axis = new Matrix3f(camera.right.mul(-1, new Vector3f()), camera.up, camera.direction).transform(new Vector3f(-delY, delX, 0.0f));
+        axis = new Matrix3f(camera.axes.x.mul(-1, new Vector3f()), camera.axes.y, camera.axes.z).transform(new Vector3f(-delY, delX, 0.0f));
         angle = axis.length();
 
         if (angle < Precision.EPSILON) {
@@ -93,12 +93,12 @@ public final class CameraController {
             if (state == GLFW_PRESS) {
 
                 switch (key) {
-                    case GLFW_KEY_D -> direction.add(camera.right);
-                    case GLFW_KEY_A -> direction.add(camera.right.mul(-1, new Vector3f()));
-                    case GLFW_KEY_W -> direction.add(camera.direction);
-                    case GLFW_KEY_S -> direction.add(camera.direction.mul(-1, new Vector3f()));
-                    case GLFW_KEY_SPACE -> direction.add(camera.up);
-                    case GLFW_KEY_LEFT_SHIFT -> direction.add(camera.up.mul(-1, new Vector3f()));
+                    case GLFW_KEY_D -> direction.add(camera.axes.x);
+                    case GLFW_KEY_A -> direction.add(camera.axes.x.mul(-1, new Vector3f()));
+                    case GLFW_KEY_W -> direction.add(camera.axes.z);
+                    case GLFW_KEY_S -> direction.add(camera.axes.z.mul(-1, new Vector3f()));
+                    case GLFW_KEY_SPACE -> direction.add(camera.axes.y);
+                    case GLFW_KEY_LEFT_SHIFT -> direction.add(camera.axes.y.mul(-1, new Vector3f()));
                 }
             }
         });
