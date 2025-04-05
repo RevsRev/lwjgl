@@ -14,7 +14,7 @@ public class UniformPrimative extends Uniform {
     }
 
     @Override
-    public void bind(int shaderProgram) {
+    public void bindForReading(int shaderProgram) {
         final int id = GL43.glGetUniformLocation(shaderProgram, getName());
         setter.accept(id);
     }

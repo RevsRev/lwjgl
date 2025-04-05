@@ -1,11 +1,12 @@
 package github.com.rev.gl.texture.image;
 
-import github.com.rev.gl.texture.ops.Readable;
+import github.com.rev.gl.shader.ShaderReadable;
 import org.lwjgl.opengl.GL43;
+import org.lwjgl.stb.STBImage;
 
 import java.nio.ByteBuffer;
 
-public final class ImageTexture implements Readable {
+public final class ImageTexture implements ShaderReadable {
 
     private final int width;
     private final int height;
@@ -20,6 +21,11 @@ public final class ImageTexture implements Readable {
         this.height = height;
         this.layer = layer;
         this.data = data;
+    }
+
+    public static ImageTexture fromFile(final String filePath, final int width, final int height, final int layer) {
+        ByteBuffer byteBuffer = STBImage.stbi_load(filePath, new int[] {width}, new int[] {height}, new int[] {3}, 0);
+        return new ImageTexture(width, height, layer, byteBuffer);
     }
 
     public void init() {
@@ -41,7 +47,7 @@ public final class ImageTexture implements Readable {
     }
 
     @Override
-    public void bindForReading() {
+    public void bindForReading(int shaderProgram) {
         if (!initialized) {
             throw new RuntimeException("Trying to use a texture before it has been initialized");
         }

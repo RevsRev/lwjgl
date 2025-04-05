@@ -1,9 +1,9 @@
 package github.com.rev.gl.texture.buffered;
 
-import github.com.rev.gl.texture.ops.Readable;
+import github.com.rev.gl.shader.ShaderReadable;
 import github.com.rev.gl.texture.ops.Resizable;
-import github.com.rev.gl.texture.ops.Writable;
+import github.com.rev.gl.shader.ShaderWritable;
 
-public interface BufferedTexture extends Readable, Writable, Resizable {
+public interface BufferedTexture extends ShaderReadable, ShaderWritable, Resizable {
     void init(int width, int height);
 }

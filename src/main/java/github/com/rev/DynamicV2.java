@@ -82,8 +82,8 @@ public final class DynamicV2 extends WindowedProgram
         List<BufferedTexture> primary = new ArrayList<>();
         List<BufferedTexture> secondary = new ArrayList<>();
         for (int i = 0; i < layerUniformNames.length; i++) {
-            BufferedTexture tPrimary = new BufferedTextureImpl(i);
-            BufferedTexture tSecondary = new BufferedTextureImpl(i);
+            BufferedTexture tPrimary = new BufferedTextureImpl(layerUniformNames[i], i);
+            BufferedTexture tSecondary = new BufferedTextureImpl(layerUniformNames[i], i);
             primary.add(tPrimary);
             secondary.add(tSecondary);
         }
@@ -152,13 +152,8 @@ public final class DynamicV2 extends WindowedProgram
                 dynamicFragmentShaderResource
         );
 
-        GL43.glUseProgram(dynamicShaderProgram);
-        for (int i = 0; i < layerUniformNames.length; i++) {
-            GL43.glUniform1i(GL43.glGetUniformLocation(dynamicShaderProgram, layerUniformNames[i]), i);
-        }
-
         for (Uniform dynamicConstantUniform : dynamicConstantUniforms) {
-            dynamicConstantUniform.bind(dynamicShaderProgram);
+            dynamicConstantUniform.bindForReading(dynamicShaderProgram);
         }
 
         /* *****************************
@@ -203,11 +198,11 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glUseProgram(dynamicShaderProgram);
 
         for (Uniform nonConstantUniform : dynamicNonConstantUniforms) {
-            nonConstantUniform.bind(dynamicShaderProgram);
+            nonConstantUniform.bindForReading(dynamicShaderProgram);
         }
 
         GL43.glDrawBuffers(bufferedSwappingTexture.bindForWriting());
-        bufferedSwappingTexture.bindForReading();
+        bufferedSwappingTexture.bindForReading(dynamicShaderProgram);
 
         GL43.glBindVertexArray(dynamicVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
@@ -215,7 +210,7 @@ public final class DynamicV2 extends WindowedProgram
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(renderShaderProgram);
-        bufferedSwappingTexture.bindForReading();
+        bufferedSwappingTexture.bindForReading(dynamicShaderProgram);
 
         GL43.glBindVertexArray(renderVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);

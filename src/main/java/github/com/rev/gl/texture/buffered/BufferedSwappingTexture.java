@@ -26,11 +26,11 @@ public class BufferedSwappingTexture implements BufferedTexture {
     }
 
     @Override
-    public void bindForReading() {
+    public void bindForReading(int shaderProgram) {
         if (swap) {
-            first.bindForReading();
+            first.bindForReading(shaderProgram);
         } else {
-            second.bindForReading();
+            second.bindForReading(shaderProgram);
         }
     }
 

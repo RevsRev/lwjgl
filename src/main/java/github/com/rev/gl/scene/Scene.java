@@ -142,7 +142,7 @@ public final class Scene extends WindowedProgram {
 
         texture = new ImageTexture(512, 512, 0, byteBuffer);
         texture.init();
-        texture.bindForReading();
+        texture.bindForReading(shader.getProgramId());
 
         model = new Matrix4f();
         uniformModel =
@@ -192,7 +192,7 @@ public final class Scene extends WindowedProgram {
         model.rotate(0.01f, new Vector3f(1,1,1));
         shader.use();
         GL43.glBindVertexArray(vao);
-        texture.bindForReading();
+        texture.bindForReading(shader.getProgramId());
 
 //        GL43.glDrawElements(GL43.GL_TRIANGLES, 6, GL43.GL_UNSIGNED_INT, 0);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 36);

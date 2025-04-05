@@ -1,6 +1,7 @@
 package github.com.rev.gl.shader;
 
 import github.com.rev.gl.uniform.Uniform;
+import lombok.Getter;
 import org.lwjgl.opengl.GL43;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class ShaderProgram {
     private final Collection<Uniform> constantUniforms = new ArrayList<>();
     private final Collection<Uniform> nonConstantUniforms = new ArrayList<>();
 
+    @Getter
     private int programId;
     private boolean initialised = false;
 
@@ -37,6 +39,10 @@ public class ShaderProgram {
         } else {
             nonConstantUniforms.add(uniform);
         }
+    }
+
+    public void addUniforms(final Collection<Uniform> uniforms) {
+        uniforms.forEach(this::addUniform);
     }
 
     public void use() {
@@ -76,7 +82,7 @@ public class ShaderProgram {
 
     private void loadUniforms(final Collection<Uniform> uniforms) {
         GL43.glUseProgram(programId);
-        uniforms.forEach(u -> u.bind(programId));
+        uniforms.forEach(u -> u.bindForReading(programId));
     }
 
     private int loadShader(final int shaderType, final String resourcePath) {
@@ -92,5 +98,4 @@ public class ShaderProgram {
         }
         return shaderIdentifier;
     }
-
 }

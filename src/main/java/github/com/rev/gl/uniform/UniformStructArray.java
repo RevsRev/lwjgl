@@ -18,7 +18,7 @@ public class UniformStructArray<T> extends Uniform {
     }
 
     @Override
-    public void bind(int shaderProgram) {
+    public void bindForReading(int shaderProgram) {
         for (int i = 0; i < elements.length; i++) {
             int finalI = i;
             structSetters.forEach(

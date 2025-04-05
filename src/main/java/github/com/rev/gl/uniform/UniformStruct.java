@@ -15,7 +15,7 @@ public class UniformStruct extends Uniform {
     }
 
     @Override
-    public void bind(int shaderProgram) {
+    public void bindForReading(int shaderProgram) {
         structSetters.forEach(
                 (structPropertyName, structSetter) -> {
                     final int id = GL43.glGetUniformLocation(shaderProgram, String.format("%s.%s", getName(), structPropertyName));

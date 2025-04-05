@@ -19,8 +19,8 @@ public final class BufferedTextures implements BufferedTexture {
     }
 
     @Override
-    public void bindForReading() {
-        textures.forEach(BufferedTexture::bindForReading);
+    public void bindForReading(int shaderProgram) {
+        textures.forEach(bt -> bt.bindForReading(shaderProgram));
     }
 
     @Override

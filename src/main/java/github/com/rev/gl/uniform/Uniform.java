@@ -1,9 +1,10 @@
 package github.com.rev.gl.uniform;
 
+import github.com.rev.gl.shader.ShaderReadable;
 import lombok.Getter;
 
 @Getter
-public abstract class Uniform {
+public abstract class Uniform implements ShaderReadable {
 
     private final String name;
     private final boolean constant;
@@ -12,6 +13,4 @@ public abstract class Uniform {
         this.name = name;
         this.constant = constant;
     }
-
-    public abstract void bind(final int shaderProgram);
 }

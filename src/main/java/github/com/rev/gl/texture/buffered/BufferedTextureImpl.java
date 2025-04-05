@@ -5,12 +5,14 @@ import org.lwjgl.opengl.GL43;
 import java.nio.ByteBuffer;
 
 public final class BufferedTextureImpl implements BufferedTexture {
+    private final String name;
     private final int layer;
     private int texId;
 
     private boolean initialized;
 
-    public BufferedTextureImpl(final int layer) {
+    public BufferedTextureImpl(final String name, final int layer) {
+        this.name = name;
         this.layer = layer;
     }
 
@@ -22,10 +24,12 @@ public final class BufferedTextureImpl implements BufferedTexture {
     }
 
     @Override
-    public void bindForReading() {
+    public void bindForReading(int shaderProgram) {
         if (!initialized) {
             throw new RuntimeException("Trying to use a texture before it has been initialized");
         }
+
+        GL43.glUniform1i(GL43.glGetUniformLocation(shaderProgram, name), layer);
 
         GL43.glActiveTexture(GL43.GL_TEXTURE0 + layer);
         GL43.glBindTexture(GL43.GL_TEXTURE_2D, texId);
