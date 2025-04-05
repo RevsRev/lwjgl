@@ -152,6 +152,7 @@ public final class DynamicV2 extends WindowedProgram
                 dynamicFragmentShaderResource
         );
 
+        GL43.glUseProgram(dynamicShaderProgram);
         for (Uniform dynamicConstantUniform : dynamicConstantUniforms) {
             dynamicConstantUniform.bindForReading(dynamicShaderProgram);
         }
