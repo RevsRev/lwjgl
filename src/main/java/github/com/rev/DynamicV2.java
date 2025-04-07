@@ -54,8 +54,6 @@ public final class DynamicV2 extends WindowedProgram
     //Framebuffer
     private int fbo;
     private int rbo;
-    private int fboTwo;
-    private int rboTwo;
 
     //Virtual Array Objects
     private int bootstrapVao;
@@ -82,8 +80,8 @@ public final class DynamicV2 extends WindowedProgram
         List<BufferedTexture> primary = new ArrayList<>();
         List<BufferedTexture> secondary = new ArrayList<>();
         for (int i = 0; i < layerUniformNames.length; i++) {
-            BufferedTexture tPrimary = new BufferedTextureImpl(layerUniformNames[i], i);
-            BufferedTexture tSecondary = new BufferedTextureImpl(layerUniformNames[i], i);
+            BufferedTexture tPrimary = new BufferedTextureImpl(layerUniformNames[i], i, i);
+            BufferedTexture tSecondary = new BufferedTextureImpl(layerUniformNames[i], i, i);
             primary.add(tPrimary);
             secondary.add(tSecondary);
         }
@@ -103,12 +101,7 @@ public final class DynamicV2 extends WindowedProgram
         fbo = GL43.glGenFramebuffers();
         rbo = GL43.glGenRenderbuffers();
 
-        setupFramebuffer(fbo, rbo);
-
-        fboTwo = GL43.glGenFramebuffers();
-        rboTwo = GL43.glGenRenderbuffers();
-
-        setupFramebuffer(fboTwo, rboTwo);
+        setupFramebuffer();
 
         /* *****************************
                 BOOTSTRAP PROGRAM
@@ -178,9 +171,6 @@ public final class DynamicV2 extends WindowedProgram
                 renderFramentShaderResource
         );
 
-        GL43.glUseProgram(renderShaderProgram);
-        GL43.glUniform1i(GL43.glGetUniformLocation(renderShaderProgram, "screenTexture"), 0);
-
         doBootstrap();
     }
 
@@ -192,29 +182,26 @@ public final class DynamicV2 extends WindowedProgram
             return;
         }
 
-        int fboInUse = bufferedSwappingTexture.isSwap() ? fboTwo : fbo;
-
-        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fboInUse);
-        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
+        GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
         GL43.glUseProgram(dynamicShaderProgram);
 
         for (Uniform nonConstantUniform : dynamicNonConstantUniforms) {
             nonConstantUniform.bindForReading(dynamicShaderProgram);
         }
 
-        GL43.glDrawBuffers(bufferedSwappingTexture.bindForWriting());
         bufferedSwappingTexture.bindForReading(dynamicShaderProgram);
+        GL43.glDrawBuffers(bufferedSwappingTexture.bindForWriting());
 
         GL43.glBindVertexArray(dynamicVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
 
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
-        GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);
         GL43.glUseProgram(renderShaderProgram);
-        bufferedSwappingTexture.bindForReading(dynamicShaderProgram);
+        bufferedSwappingTexture.bindForReading(renderShaderProgram);
 
         GL43.glBindVertexArray(renderVao);
         GL43.glDrawArrays(GL43.GL_TRIANGLES, 0, 6);
+        GL43.glDrawBuffers(GL43.GL_FRONT);
 
         bufferedSwappingTexture.swap();
     }
@@ -243,7 +230,7 @@ public final class DynamicV2 extends WindowedProgram
         };
     }
 
-    private void setupFramebuffer(int fbo, int rbo) {
+    private void setupFramebuffer() {
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, fbo);
         GL43.glBindRenderbuffer(GL43.GL_RENDERBUFFER, rbo);
         GL43.glRenderbufferStorage(GL43.GL_RENDERBUFFER, GL43.GL_DEPTH24_STENCIL8, width, height);
@@ -251,22 +238,22 @@ public final class DynamicV2 extends WindowedProgram
                 rbo);
 
         if (GL43.glCheckFramebufferStatus(GL43.GL_FRAMEBUFFER) != GL43.GL_FRAMEBUFFER_COMPLETE) {
-            System.out.println("Frame buffer was not completed");
+            System.out.println("Frame buffer was not completed, error code: " + GL43.glCheckFramebufferStatus(GL43.GL_FRAMEBUFFER));
         }
     }
 
     private void resize() {
         GL43.glViewport(0, 0, this.width, this.height);
 
-        setupFramebuffer(fbo, rbo);
-        setupFramebuffer(fboTwo, rboTwo);
+        setupFramebuffer();
         bufferedSwappingTexture.resize(width, height);
 
         doBootstrap();
     }
 
     private void doBootstrap() {
-        int bootstrapFbo = bufferedSwappingTexture.isSwap() ? fboTwo : fbo;
+//        int bootstrapFbo = bufferedSwappingTexture.isSwap() ? fboTwo : fbo;
+        int bootstrapFbo = fbo;
         GL43.glBindFramebuffer(GL43.GL_FRAMEBUFFER, bootstrapFbo);
         GL43.glDrawBuffers(bufferedSwappingTexture.bindForWriting());
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT);

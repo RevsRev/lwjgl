@@ -6,14 +6,16 @@ import java.nio.ByteBuffer;
 
 public final class BufferedTextureImpl implements BufferedTexture {
     private final String name;
-    private final int layer;
+    private final int readLayer;
+    private final int writeLayer;
     private int texId;
 
     private boolean initialized;
 
-    public BufferedTextureImpl(final String name, final int layer) {
+    public BufferedTextureImpl(final String name, final int readLayer, final int writeLayer) {
         this.name = name;
-        this.layer = layer;
+        this.readLayer = readLayer;
+        this.writeLayer = writeLayer;
     }
 
     @Override
@@ -29,9 +31,9 @@ public final class BufferedTextureImpl implements BufferedTexture {
             throw new RuntimeException("Trying to use a texture before it has been initialized");
         }
 
-        GL43.glUniform1i(GL43.glGetUniformLocation(shaderProgram, name), layer);
+        GL43.glUniform1i(GL43.glGetUniformLocation(shaderProgram, name), readLayer);
 
-        GL43.glActiveTexture(GL43.GL_TEXTURE0 + layer);
+        GL43.glActiveTexture(GL43.GL_TEXTURE0 + readLayer);
         GL43.glBindTexture(GL43.GL_TEXTURE_2D, texId);
     }
 
@@ -41,15 +43,15 @@ public final class BufferedTextureImpl implements BufferedTexture {
             throw new RuntimeException("Trying to use a texture before it has been initialized");
         }
 
-        GL43.glBindTexture(GL43.GL_TEXTURE_2D, texId);
+//        GL43.glBindTexture(GL43.GL_TEXTURE_2D, texId);
         GL43.glFramebufferTexture2D(
                 GL43.GL_FRAMEBUFFER,
-                GL43.GL_COLOR_ATTACHMENT0 + layer,
+                GL43.GL_COLOR_ATTACHMENT0 + writeLayer,
                 GL43.GL_TEXTURE_2D,
                 texId,
                 0
         );
-        return new int[]{GL43.GL_COLOR_ATTACHMENT0 + layer};
+        return new int[]{GL43.GL_COLOR_ATTACHMENT0 + writeLayer};
     }
 
     @Override
