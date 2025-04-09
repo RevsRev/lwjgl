@@ -1,11 +1,7 @@
 package github.com.rev.gl.shader;
 
-import github.com.rev.gl.uniform.Uniform;
 import lombok.Getter;
 import org.lwjgl.opengl.GL43;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 import static github.com.rev.util.IOUtils.readCharSequence;
 
@@ -14,38 +10,15 @@ public class ShaderProgram {
     private final String vertexResource;
     private final String fragmentResource;
 
-    private final Collection<Uniform> constantUniforms = new ArrayList<>();
-    private final Collection<Uniform> nonConstantUniforms = new ArrayList<>();
-
     @Getter
     private int programId;
     private boolean initialised = false;
-
     public ShaderProgram(final String vertexResource, final String fragmentResource) {
         this.vertexResource = vertexResource;
         this.fragmentResource = fragmentResource;
     }
 
-    public void addUniform(final Uniform uniform) {
-        if (uniform.isConstant()) {
-            if (initialised) {
-                String message = String.format(
-                        "Trying to add a constant uniform after a shader has been initialised (vertex: '%s', fragment: '%s')",
-                        vertexResource,
-                        fragmentResource);
-                throw new RuntimeException(message);
-            }
-            constantUniforms.add(uniform);
-        } else {
-            nonConstantUniforms.add(uniform);
-        }
-    }
-
-    public void addUniforms(final Collection<Uniform> uniforms) {
-        uniforms.forEach(this::addUniform);
-    }
-
-    public void use() {
+    public void use(final Uniforms... nonConstantUniforms) {
         if (!initialised) {
             String message = String.format(
                     "Trying to use a shader before it has been initialised (vertex: '%s', fragment: '%s')",
@@ -54,7 +27,7 @@ public class ShaderProgram {
             throw new RuntimeException(message);
         }
         GL43.glUseProgram(programId);
-        loadUniforms(nonConstantUniforms);
+        setUniforms(nonConstantUniforms);
     }
 
     public void init() {
@@ -75,14 +48,21 @@ public class ShaderProgram {
         GL43.glDeleteShader(vertexShader);
         GL43.glDeleteShader(fragmentShader);
 
-        loadUniforms(constantUniforms);
-
         initialised = true;
     }
 
-    private void loadUniforms(final Collection<Uniform> uniforms) {
+    public void setConstantUniforms(final Uniforms uniforms) {
+        setUniforms(uniforms);
+    }
+    private void setUniforms(final Uniforms... uniforms) {
+        if (!initialised) {
+            throw new RuntimeException("Trying to set uniforms on an uninitialised shader");
+        }
         GL43.glUseProgram(programId);
-        uniforms.forEach(u -> u.bindForReading(programId));
+        int size = uniforms == null ? 0 : uniforms.length;
+        for (int i = 0; i < size; i++) {
+            uniforms[i].loadUniforms(programId);
+        }
     }
 
     private int loadShader(final int shaderType, final String resourcePath) {

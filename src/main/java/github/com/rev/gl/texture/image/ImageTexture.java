@@ -1,6 +1,7 @@
 package github.com.rev.gl.texture.image;
 
 import github.com.rev.gl.shader.ShaderReadable;
+import lombok.Getter;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.stb.STBImage;
 
@@ -10,6 +11,7 @@ public final class ImageTexture implements ShaderReadable {
 
     private final int width;
     private final int height;
+    @Getter
     private final int layer;
     private final ByteBuffer data;
 
@@ -47,10 +49,12 @@ public final class ImageTexture implements ShaderReadable {
     }
 
     @Override
-    public void bindForReading(int shaderProgram) {
+    public void bindForReading(int location) {
         if (!initialized) {
             throw new RuntimeException("Trying to use a texture before it has been initialized");
         }
+
+        GL43.glUniform1i(location, layer);
 
         GL43.glActiveTexture(GL43.GL_TEXTURE0 + layer);
         GL43.glBindTexture(GL43.GL_TEXTURE_2D, texId);

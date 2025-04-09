@@ -11,13 +11,9 @@ import java.util.Map;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_UP;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
@@ -26,8 +22,8 @@ import static org.lwjgl.glfw.GLFW.GLFW_REPEAT;
 public final class CameraController {
 
     @Getter @Setter
-    private double speed = 5.0d;
-    private float sensitivity = 0.1f;
+    private double speed = 1.0d;
+    private float sensitivity = 1.0f;
     private final Camera camera;
 
     private final Map<Integer, Integer> keyStates = new HashMap<>(Map.of(
@@ -69,7 +65,7 @@ public final class CameraController {
         lastMouseX = xpos;
         lastMouseY = ypos;
 
-        axis = new Matrix3f(camera.axes.x.mul(-1, new Vector3f()), camera.axes.y, camera.axes.z).transform(new Vector3f(-delY, delX, 0.0f));
+        axis = new Matrix3f(camera.p.axes.x.mul(-1, new Vector3f()), camera.p.axes.y, camera.p.axes.z).transform(new Vector3f(-delY, delX, 0.0f));
         angle = axis.length();
 
         if (angle < Precision.EPSILON) {
@@ -82,6 +78,7 @@ public final class CameraController {
     }
 
     public void process(double frameTime) {
+        System.out.println(frameTime);
         processMovement(frameTime);
         processDirection(frameTime);
     }
@@ -93,12 +90,12 @@ public final class CameraController {
             if (state == GLFW_PRESS) {
 
                 switch (key) {
-                    case GLFW_KEY_D -> direction.add(camera.axes.x);
-                    case GLFW_KEY_A -> direction.add(camera.axes.x.mul(-1, new Vector3f()));
-                    case GLFW_KEY_W -> direction.add(camera.axes.z);
-                    case GLFW_KEY_S -> direction.add(camera.axes.z.mul(-1, new Vector3f()));
-                    case GLFW_KEY_SPACE -> direction.add(camera.axes.y);
-                    case GLFW_KEY_LEFT_SHIFT -> direction.add(camera.axes.y.mul(-1, new Vector3f()));
+                    case GLFW_KEY_D -> direction.add(camera.p.axes.x);
+                    case GLFW_KEY_A -> direction.add(camera.p.axes.x.mul(-1, new Vector3f()));
+                    case GLFW_KEY_W -> direction.add(camera.p.axes.z);
+                    case GLFW_KEY_S -> direction.add(camera.p.axes.z.mul(-1, new Vector3f()));
+                    case GLFW_KEY_SPACE -> direction.add(camera.p.axes.y);
+                    case GLFW_KEY_LEFT_SHIFT -> direction.add(camera.p.axes.y.mul(-1, new Vector3f()));
                 }
             }
         });
