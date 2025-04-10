@@ -6,9 +6,10 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
-public final class Point {
-
+public class Point {
+    @Getter
     final Axes axes;
+    @Getter
     final Position position;
     private final Matrix4f model;
 
@@ -34,7 +35,7 @@ public final class Point {
         );
     }
 
-    public void move(final Vector3f amount) {
+    public final void move(final Vector3f amount) {
         position.xyz.add(amount);
         setPositionFloats();
     }
@@ -45,7 +46,7 @@ public final class Point {
         positionFloats[2] = position.xyz.z;
     }
 
-    public void rotate(final float angle, final Vector3f axis) {
+    public final void rotate(final float angle, final Vector3f axis) {
         Matrix3f rotation3 = new Matrix3f().rotate(angle, axis);
         rotation3.transform(axes.x).normalize();
         rotation3.transform(axes.z).normalize();

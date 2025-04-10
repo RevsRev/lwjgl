@@ -101,7 +101,7 @@ public final class Scene extends WindowedProgram {
 
         glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
 
-        pointLights.add(new PointLight());
+        pointLights.add(new PointLight(new Axes(), new Position(new Vector3f(0.0f, 0.0f, 0.0f))));
         directionalLights.add(new DirectionalLight());
 
         simpleItem = new SimpleItem.Builder(

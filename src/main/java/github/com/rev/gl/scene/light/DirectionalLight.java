@@ -6,7 +6,7 @@ import org.lwjgl.opengl.GL43;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public class DirectionalLight extends Light{
+public class DirectionalLight implements Light{
     private Vector3f direction = new Vector3f(0.0f, -1.0f, 0.0f);
 
     public static Map<String, BiConsumer<Integer, DirectionalLight>> structUniforms() {
