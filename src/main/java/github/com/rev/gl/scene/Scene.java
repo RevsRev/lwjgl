@@ -1,11 +1,13 @@
 package github.com.rev.gl.scene;
 
 import github.com.rev.WindowedProgram;
+import github.com.rev.gl.scene.item.Material;
 import github.com.rev.gl.scene.item.SimpleItem;
 import github.com.rev.gl.scene.light.DirectionalLight;
 import github.com.rev.gl.scene.light.PointLight;
 import github.com.rev.gl.scene.light.SpotLight;
 import github.com.rev.gl.shader.Uniforms;
+import github.com.rev.gl.texture.LayerManager;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -107,7 +109,8 @@ public final class Scene extends WindowedProgram {
                 "scene/shaders/vertex/simple_item.vert",
                 "scene/shaders/fragment/simple_item_simple_material.frag",
                 "src/main/resources/scene/textures/container.jpg")
-                .build();
+                .setMaterial(new Material.Builder())
+                .build(new LayerManager());
 
         sceneUniforms = new Uniforms();
 

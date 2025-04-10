@@ -14,6 +14,10 @@ public class Uniforms {
     public Uniforms() {
     }
 
+    public final void add(final Uniforms other) {
+        uniforms.putAll(other.uniforms);
+    }
+
     public <T> void addPrimitiveUniform(final String name, final T value, final BiConsumer<Integer, T> setter) {
         uniforms.put(name, id -> setter.accept(id, value));
     }
