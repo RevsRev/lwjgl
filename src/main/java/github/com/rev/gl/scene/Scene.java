@@ -85,7 +85,8 @@ public final class Scene extends WindowedProgram {
 
     private final Camera camera = new Camera();
     private final CameraController cameraController = new CameraController(camera);
-    private SimpleItem simpleItem;
+    private SimpleItem cube;
+    private SimpleItem pointLightCube;
     private Uniforms sceneUniforms;
 
     public Scene(String title) {
@@ -101,16 +102,25 @@ public final class Scene extends WindowedProgram {
 
         glBindFramebuffer(GL43.GL_FRAMEBUFFER, 0);
 
-        pointLights.add(new PointLight(new Axes(), new Position(new Vector3f(0.0f, 0.0f, 0.0f))));
+        PointLight pointLight = new PointLight(new Axes(), new Position(new Vector3f(2.0f, 3.0f, 0.0f)));
+        pointLights.add(pointLight);
         directionalLights.add(new DirectionalLight());
 
-        simpleItem = new SimpleItem.Builder(
+        cube = new SimpleItem.Builder(
                 CUBE_VERTICES,
                 "scene/shaders/vertex/simple_item.vert",
                 "scene/shaders/fragment/simple_item_simple_material.frag")
                 .setTexture("src/main/resources/scene/textures/container.jpg")
                 .setMaterial(new Material.Builder())
                 .build(new LayerManager());
+
+        pointLightCube = new SimpleItem.Builder(
+                CUBE_VERTICES,
+                "scene/shaders/vertex/point_light.vert",
+                "scene/shaders/fragment/point_light.frag")
+                .setPoint(pointLight)
+                .build(new LayerManager());
+        pointLightCube.point.setScale(0.1f);
 
         sceneUniforms = new Uniforms();
 
@@ -133,8 +143,10 @@ public final class Scene extends WindowedProgram {
         GL43.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         GL43.glClear(GL43.GL_COLOR_BUFFER_BIT | GL43.GL_DEPTH_BUFFER_BIT);
 
-        simpleItem.point.rotate(0.01f, new Vector3f(1,1,1));
-        simpleItem.render(sceneUniforms);
+        cube.point.rotate(0.01f, new Vector3f(1,1,1));
+        cube.render(sceneUniforms);
+        pointLightCube.point.rotate(0.01f, new Vector3f(1,1,1));
+        pointLightCube.render(sceneUniforms);
 
         long frameTime = System.nanoTime() - frameStart;
         double dT = (double)(frameTime) / 1000000.0d;

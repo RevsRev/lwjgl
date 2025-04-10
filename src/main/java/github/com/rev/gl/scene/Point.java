@@ -1,6 +1,7 @@
 package github.com.rev.gl.scene;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -13,6 +14,9 @@ public class Point {
     final Position position;
     private final Matrix4f model;
 
+    @Setter
+    private float scale = 1.0f;
+
     @Getter
     private final float[] positionFloats = new float[3];
     @Getter
@@ -21,18 +25,18 @@ public class Point {
     public Point(Axes axes, Position position) {
         this.axes = axes;
         this.position = position;
-        this.model = modelFromAxis(axes);
+        this.model = computeModel();
         setPositionFloats();
         setModelFloats();
     }
 
-    private static Matrix4f modelFromAxis(Axes axes) {
+    private Matrix4f computeModel() {
         return new Matrix4f(
-                new Vector4f(axes.x, 0.0f),
-                new Vector4f(axes.y, 0.0f),
-                new Vector4f(axes.z, 0.0f),
-                new Vector4f(0.0f, 0.0f, 0.0f, 1.0f)
-        );
+                new Vector4f(axes.x, 0.0f).mul(scale),
+                new Vector4f(axes.y, 0.0f).mul(scale),
+                new Vector4f(axes.z, 0.0f).mul(scale),
+                new Vector4f(0.0f, 0.0f, 0.0f, 1)
+        ).translateLocal(position.xyz);
     }
 
     public final void move(final Vector3f amount) {
@@ -52,7 +56,7 @@ public class Point {
         rotation3.transform(axes.z).normalize();
         axes.x.cross(axes.z, axes.y);
         axes.z.cross(axes.y, axes.x);
-        model.set(modelFromAxis(axes));
+        model.set(computeModel());
         setModelFloats();
     }
 

@@ -38,7 +38,7 @@ public class SimpleItem {
         private final float[] vertices;
         private final String vertexShader;
         private final String fragmentShader;
-        private Optional<String> texture;
+        private Optional<String> texture = Optional.empty();
         private Point point = new Point(new Axes(), new Position());
         private Optional<Material.Builder> material = Optional.empty();
 
