@@ -107,8 +107,8 @@ public final class Scene extends WindowedProgram {
         simpleItem = new SimpleItem.Builder(
                 CUBE_VERTICES,
                 "scene/shaders/vertex/simple_item.vert",
-                "scene/shaders/fragment/simple_item_simple_material.frag",
-                "src/main/resources/scene/textures/container.jpg")
+                "scene/shaders/fragment/simple_item_simple_material.frag")
+                .setTexture("src/main/resources/scene/textures/container.jpg")
                 .setMaterial(new Material.Builder())
                 .build(new LayerManager());
 

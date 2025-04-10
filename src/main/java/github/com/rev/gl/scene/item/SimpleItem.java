@@ -38,29 +38,30 @@ public class SimpleItem {
         final float[] vertices;
         final String vertexShader;
         final String fragmentShader;
-        final String texture;
+        private Optional<String> texture;
+        private Point point = new Point(new Axes(), new Position());
         private Optional<Material.Builder> material = Optional.empty();
 
-        public Builder(float[] vertices, String vertexShader, String fragmentShader, String texture) {
+        public Builder(float[] vertices, String vertexShader, String fragmentShader) {
             this.vertices = vertices;
             this.vertexShader = vertexShader;
             this.fragmentShader = fragmentShader;
-            this.texture = texture;
         }
 
         public SimpleItem build(final LayerManager layerManager) {
 
-            final ImageTexture imageTexture = ImageTexture.fromFile(texture, 512, 512, layerManager.next()); //TODO - Extract to parameters!
-            imageTexture.init();
-
             Uniforms constantUniforms = new Uniforms();
-            constantUniforms.addPrimitiveUniform("aTexture", imageTexture, (id, tex) -> {
-                imageTexture.bindForReading(id);
-            });
+
+            if (texture.isPresent()) {
+                final ImageTexture imageTexture = ImageTexture.fromFile(texture.get(), 512, 512, layerManager.next()); //TODO - Extract to parameters!
+                imageTexture.init();
+
+                constantUniforms.addPrimitiveUniform("aTexture", imageTexture, (id, tex) -> {
+                    imageTexture.bindForReading(id);
+                });
+            }
 
             material.ifPresent(m -> constantUniforms.add(m.build(layerManager).uniforms()));
-
-            final Point point = new Point(new Axes(), new Position());
 
             final Uniforms frameUniforms = new Uniforms();
             frameUniforms.addPrimitiveUniform("position", point, (id, pt) -> GL43.glUniform3fv(id, pt.getPositionFloats()));
@@ -74,8 +75,18 @@ public class SimpleItem {
             return new SimpleItem(vao, shaderProgram, frameUniforms, point);
         }
 
-        public Builder setMaterial(Material.Builder material) {
+        public Builder setMaterial(final Material.Builder material) {
             this.material = Optional.ofNullable(material);
+            return this;
+        }
+
+        public Builder setPoint(final Point point) {
+            this.point = point;
+            return this;
+        }
+
+        public Builder setTexture(final String texture) {
+            this.texture = Optional.ofNullable(texture);
             return this;
         }
     }
