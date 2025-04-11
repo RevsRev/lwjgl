@@ -1,7 +1,6 @@
 package github.com.rev.gl.scene;
 
 import github.com.rev.WindowedProgram;
-import github.com.rev.gl.scene.item.Material;
 import github.com.rev.gl.scene.item.SimpleItem;
 import github.com.rev.gl.scene.light.DirectionalLight;
 import github.com.rev.gl.scene.light.PointLight;
@@ -110,8 +109,9 @@ public final class Scene extends WindowedProgram {
                 CUBE_VERTICES,
                 "scene/shaders/vertex/simple_item.vert",
                 "scene/shaders/fragment/simple_item_simple_material.frag")
-                .setTexture("src/main/resources/scene/textures/container.jpg")
-                .setMaterial(new Material.Builder())
+                .addAmbientTexture("src/main/resources/scene/textures/container.jpg")
+                .addDiffuseTexture("src/main/resources/scene/textures/container.jpg")
+                .addSpecularTexture("src/main/resources/scene/textures/container.jpg")
                 .build(new LayerManager());
 
         pointLightCube = new SimpleItem.Builder(

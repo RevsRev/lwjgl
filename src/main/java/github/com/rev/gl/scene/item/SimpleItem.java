@@ -9,7 +9,8 @@ import github.com.rev.gl.texture.LayerManager;
 import github.com.rev.gl.texture.image.ImageTexture;
 import org.lwjgl.opengl.GL43;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SimpleItem {
 
@@ -38,9 +39,12 @@ public class SimpleItem {
         private final float[] vertices;
         private final String vertexShader;
         private final String fragmentShader;
-        private Optional<String> texture = Optional.empty();
         private Point point = new Point(new Axes(), new Position());
-        private Optional<Material.Builder> material = Optional.empty();
+
+        private final List<String> ambientTextures = new ArrayList<>();
+        private final List<String> diffuseTextures = new ArrayList<>();
+        private final List<String> specularTextures = new ArrayList<>();
+        private float shininess = 1.0f;
 
         public Builder(float[] vertices, String vertexShader, String fragmentShader) {
             this.vertices = vertices;
@@ -52,16 +56,10 @@ public class SimpleItem {
 
             Uniforms constantUniforms = new Uniforms();
 
-            if (texture.isPresent()) {
-                final ImageTexture imageTexture = ImageTexture.fromFile(texture.get(), 512, 512, layerManager.next()); //TODO - Extract to parameters!
-                imageTexture.init();
-
-                constantUniforms.addPrimitiveUniform("aTexture", imageTexture, (id, tex) -> {
-                    imageTexture.bindForReading(id);
-                });
-            }
-
-            material.ifPresent(m -> constantUniforms.add(m.build(layerManager).uniforms()));
+            constantUniforms.add(addMaterials(ambientTextures, "ambientTextures", layerManager));
+            constantUniforms.add(addMaterials(diffuseTextures, "diffuseTextures", layerManager));
+            constantUniforms.add(addMaterials(specularTextures, "specularTextures", layerManager));
+            constantUniforms.addPrimitiveUniform("shininess", shininess, GL43::glUniform1f);
 
             final Uniforms frameUniforms = new Uniforms();
             frameUniforms.addPrimitiveUniform("position", point, (id, pt) -> GL43.glUniform3fv(id, pt.getPositionFloats()));
@@ -75,9 +73,22 @@ public class SimpleItem {
             return new SimpleItem(vao, shaderProgram, frameUniforms, point);
         }
 
-        public Builder setMaterial(final Material.Builder material) {
-            this.material = Optional.ofNullable(material);
-            return this;
+        private Uniforms addMaterials(final List<String> textures, final String uniformName, final LayerManager layerManager) {
+
+            final Uniforms uniforms = new Uniforms();
+            if (textures.isEmpty()) {
+                return uniforms;
+            }
+
+            final ImageTexture[] imageTextures = new ImageTexture[textures.size()];
+            for (int i = 0; i < textures.size(); i++) {
+                ImageTexture imageTexture = ImageTexture.fromFile(textures.get(i), 512, 512, layerManager.next());
+                imageTexture.init();
+                imageTextures[i] = imageTexture;
+            }
+            uniforms.addArrayUniform(uniformName, imageTextures, (id, tex) -> tex.bindForReading(id));
+            uniforms.addPrimitiveUniform(uniformName + "Size", textures.size(), GL43::glUniform1i);
+            return uniforms;
         }
 
         public Builder setPoint(final Point point) {
@@ -85,8 +96,23 @@ public class SimpleItem {
             return this;
         }
 
-        public Builder setTexture(final String texture) {
-            this.texture = Optional.ofNullable(texture);
+        public Builder addAmbientTexture(final String texture) {
+            ambientTextures.add(texture);
+            return this;
+        }
+
+        public Builder addDiffuseTexture(final String texture) {
+            diffuseTextures.add(texture);
+            return this;
+        }
+
+        public Builder addSpecularTexture(final String texture) {
+            specularTextures.add(texture);
+            return this;
+        }
+
+        public Builder setShininess(final float shininess) {
+            this.shininess = shininess;
             return this;
         }
     }
