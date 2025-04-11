@@ -60,7 +60,7 @@ public final class Material {
                                                                 final Vector3f defaultValue,
                                                                 final LayerManager layerManager) {
             return texture.map(
-                            s -> new LightingProperties(ImageTexture.fromFile(s, 512, 512, layerManager.next())))
+                            s -> new LightingProperties(ImageTexture.fromFile(s, layerManager.next())))
                     .orElseGet(() -> new LightingProperties(defaultValue));
         }
 

@@ -109,9 +109,10 @@ public final class Scene extends WindowedProgram {
                 CUBE_VERTICES,
                 "scene/shaders/vertex/simple_item.vert",
                 "scene/shaders/fragment/simple_item_simple_material.frag")
-                .addAmbientTexture("src/main/resources/scene/textures/container.jpg")
-                .addDiffuseTexture("src/main/resources/scene/textures/container.jpg")
-                .addSpecularTexture("src/main/resources/scene/textures/container.jpg")
+                .addAmbientTexture("src/main/resources/scene/textures/container2.png")
+                .addDiffuseTexture("src/main/resources/scene/textures/container2.png")
+                .addSpecularTexture("src/main/resources/scene/textures/container2_specular.png")
+                .setShininess(0.2f)
                 .build(new LayerManager());
 
         pointLightCube = new SimpleItem.Builder(

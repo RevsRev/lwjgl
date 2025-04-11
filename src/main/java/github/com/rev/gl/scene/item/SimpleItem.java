@@ -82,7 +82,7 @@ public class SimpleItem {
 
             final ImageTexture[] imageTextures = new ImageTexture[textures.size()];
             for (int i = 0; i < textures.size(); i++) {
-                ImageTexture imageTexture = ImageTexture.fromFile(textures.get(i), 512, 512, layerManager.next());
+                ImageTexture imageTexture = ImageTexture.fromFile(textures.get(i), layerManager.next());
                 imageTexture.init();
                 imageTextures[i] = imageTexture;
             }
