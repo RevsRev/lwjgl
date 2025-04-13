@@ -23,7 +23,7 @@ public final class CameraController {
 
     @Getter @Setter
     private double speed = 1.0d;
-    private float sensitivity = 1.0f;
+    private float sensitivity = 0.10f;
     private final Camera camera;
 
     private final Map<Integer, Integer> keyStates = new HashMap<>(Map.of(

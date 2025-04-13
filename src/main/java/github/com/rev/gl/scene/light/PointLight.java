@@ -11,11 +11,17 @@ import org.lwjgl.opengl.GL43;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-@Getter
-@Setter
 public class PointLight extends Point implements Light {
+
+    private final Vector3f ambient = new Vector3f(1.0f, 1.0f, 1.0f);
+    private final Vector3f diffuse = new Vector3f(1.0f, 1.0f, 1.0f);
+    private final Vector3f specular = new Vector3f(1.0f, 1.0f, 1.0f);
+
+    @Getter @Setter
     private float constant = 1.0f;
+    @Getter @Setter
     private float linear = 1.0f;
+    @Getter @Setter
     private float quadratic = 1.0f;
 
     public PointLight(Axes axes, Position position) {
@@ -32,5 +38,36 @@ public class PointLight extends Point implements Light {
                 "linear", (id, pL) -> GL43.glUniform1f(id, pL.linear),
                 "quadratic", (id, pL) -> GL43.glUniform1f(id, pL.quadratic)
         );
+    }
+
+
+    @Override
+    public void setAmbient(Vector3f ambient) {
+        this.ambient.set(ambient);
+    }
+
+    @Override
+    public void setDiffuse(Vector3f diffuse) {
+        this.diffuse.set(diffuse);
+    }
+
+    @Override
+    public void setSpecular(Vector3f ambient) {
+        this.specular.set(specular);
+    }
+
+    @Override
+    public Vector3f getAmbient() {
+        return new Vector3f(ambient);
+    }
+
+    @Override
+    public Vector3f getDiffuse() {
+        return new Vector3f(ambient);
+    }
+
+    @Override
+    public Vector3f getSpecular() {
+        return new Vector3f(ambient);
     }
 }

@@ -2,7 +2,7 @@ package github.com.rev.gl.scene.item;
 
 import github.com.rev.gl.shader.Uniforms;
 import github.com.rev.gl.texture.LayerManager;
-import github.com.rev.gl.texture.image.ImageTexture;
+import github.com.rev.gl.texture.image.GlImageTextureBinding;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL43;
 
@@ -60,7 +60,7 @@ public final class Material {
                                                                 final Vector3f defaultValue,
                                                                 final LayerManager layerManager) {
             return texture.map(
-                            s -> new LightingProperties(ImageTexture.fromFile(s, layerManager.next())))
+                            s -> new LightingProperties(GlImageTextureBinding.fromFile(s, layerManager.next())))
                     .orElseGet(() -> new LightingProperties(defaultValue));
         }
 
@@ -107,7 +107,7 @@ public final class Material {
             this.consumer = id -> GL43.glUniform1f(id, value);
         }
 
-        public LightingProperties(final ImageTexture texture) {
+        public LightingProperties(final GlImageTextureBinding texture) {
             this.consumer = texture::bindForReading;
         }
     }

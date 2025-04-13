@@ -1,0 +1,11 @@
+Model Information:
+* title:	bigfoot (SASQUATCH)
+* source:	https://sketchfab.com/3d-models/bigfoot-sasquatch-8ffa5ed7a2a849389e3c7d709f3c6604
+* author:	boy the insane (https://sketchfab.com/juansefolgueira)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "bigfoot (SASQUATCH)" (https://sketchfab.com/3d-models/bigfoot-sasquatch-8ffa5ed7a2a849389e3c7d709f3c6604) by boy the insane (https://sketchfab.com/juansefolgueira) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
